@@ -1,0 +1,27 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Build
+dist/
+build/
+
+
+*.pem
+*.key
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+backend/kpis-team-dashboard-93e2ff2db8e8.json

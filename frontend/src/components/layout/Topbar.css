@@ -1,0 +1,157 @@
+.topbar {
+  height: 80px;
+
+  position: fixed;
+
+  top: 0;
+  left: 240px;
+  right: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 28px;
+
+  background:
+    rgba(4, 15, 27, 0.92);
+
+  border-bottom:
+    1px solid rgba(91, 137, 180, 0.15);
+
+  backdrop-filter: blur(12px);
+
+  z-index: 90;
+}
+
+/* BUSCA */
+
+.topbar-search {
+  width: 500px;
+  max-width: 50%;
+
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 0 15px;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.25);
+
+  border-radius: 9px;
+
+  background:
+    rgba(12, 29, 47, 0.8);
+
+  color: #91a5bc;
+}
+
+.topbar-search input {
+  flex: 1;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 14px;
+}
+
+.topbar-search input::placeholder {
+  color: #8092a8;
+}
+
+/* AÇÕES */
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 24px;
+}
+
+/* NOTIFICAÇÕES */
+
+.notification-button {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+
+  background: transparent;
+
+  color: #b7c5d5;
+
+  cursor: pointer;
+}
+
+.notification-button span {
+  position: absolute;
+
+  top: 0;
+  right: 0;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #ff5b22;
+}
+
+/* USUÁRIO */
+
+.user-profile {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  color: white;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #ff5b22;
+
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.user-info strong {
+  color: white;
+
+  font-size: 14px;
+}
+
+.user-info small {
+  color: #8ea1b6;
+
+  font-size: 11px;
+}

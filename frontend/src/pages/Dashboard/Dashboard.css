@@ -1,0 +1,658 @@
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+.dashboard-layout {
+  min-height: 100vh;
+  width: 100%;
+
+  background:
+    radial-gradient(
+      circle at 70% 20%,
+      rgba(20, 53, 86, 0.18),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      #020914 0%,
+      #04111f 55%,
+      #020914 100%
+    );
+
+  color: #ffffff;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+
+/* =========================================================
+   CONTEÚDO PRINCIPAL
+   ========================================================= */
+
+/*
+ * Sidebar aberto:
+ * 240px
+ *
+ * Sidebar fechado:
+ * 72px
+ */
+
+.dashboard-content {
+  margin-left: 240px;
+
+  padding-top: 80px;
+
+  min-height: 100vh;
+
+  padding-left: 34px;
+  padding-right: 34px;
+  padding-bottom: 50px;
+
+  transition:
+    margin-left 0.25s ease;
+}
+
+
+/*
+ * Quando o Sidebar estiver recolhido,
+ * o conteúdo ocupa o espaço liberado.
+ */
+
+.dashboard-layout:has(.sidebar.collapsed)
+.dashboard-content {
+  margin-left: 72px;
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.dashboard-hero {
+  min-height: 230px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  padding: 42px 44px;
+
+  margin-bottom: 30px;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.18);
+
+  border-radius: 16px;
+
+  background:
+    radial-gradient(
+      circle at 85% 20%,
+      rgba(255, 91, 34, 0.08),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(10, 28, 46, 0.92),
+      rgba(4, 16, 29, 0.96)
+    );
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.18);
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   TEXTO DO HERO
+   ========================================================= */
+
+.hero-text {
+  max-width: 760px;
+}
+
+.hero-welcome {
+  display: inline-block;
+
+  margin-bottom: 12px;
+
+  color: #ff5b22;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  letter-spacing: 1.5px;
+
+  text-transform: uppercase;
+}
+
+.hero-text h1 {
+  margin: 0;
+
+  font-size: 38px;
+  line-height: 1.15;
+
+  font-weight: 700;
+
+  letter-spacing: -1px;
+}
+
+.hero-text p {
+  margin: 14px 0 0;
+
+  max-width: 680px;
+
+  color: #91a5bb;
+
+  font-size: 16px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.dashboard-status {
+  min-width: 190px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 15px 18px;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.2);
+
+  border-radius: 11px;
+
+  background:
+    rgba(5, 20, 34, 0.75);
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #36c76c;
+
+  box-shadow:
+    0 0 10px rgba(54, 199, 108, 0.65);
+}
+
+.dashboard-status div:last-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.dashboard-status strong {
+  color: #ffffff;
+
+  font-size: 13px;
+}
+
+.dashboard-status span {
+  color: #7f94aa;
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   SEÇÕES
+   ========================================================= */
+
+.areas-section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 18px;
+}
+
+.section-header h2 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 22px;
+
+  font-weight: 650;
+}
+
+.section-header p {
+  margin: 6px 0 0;
+
+  color: #8195aa;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   GRID DE ÁREAS
+   ========================================================= */
+
+.areas-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+
+/* =========================================================
+   CARD DE ÁREA
+   ========================================================= */
+
+.area-card {
+  position: relative;
+
+  min-height: 145px;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 16px;
+
+  padding: 22px;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.17);
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(10, 28, 46, 0.9),
+      rgba(4, 16, 29, 0.92)
+    );
+
+  color: #ffffff;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.area-card:hover {
+  transform: translateY(-3px);
+
+  border-color:
+    rgba(255, 91, 34, 0.5);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15, 34, 53, 0.96),
+      rgba(5, 18, 31, 0.96)
+    );
+
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(255, 91, 34, 0.05);
+}
+
+.area-card:active {
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   ÍCONE DA ÁREA
+   ========================================================= */
+
+.area-icon {
+  width: 50px;
+  height: 50px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  color: #ff5b22;
+
+  background:
+    rgba(255, 91, 34, 0.08);
+
+  border:
+    1px solid rgba(255, 91, 34, 0.18);
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.area-card:hover .area-icon {
+  background:
+    rgba(255, 91, 34, 0.13);
+
+  border-color:
+    rgba(255, 91, 34, 0.35);
+}
+
+
+/* =========================================================
+   CONTEÚDO DO CARD
+   ========================================================= */
+
+.area-content {
+  min-width: 0;
+
+  padding-right: 20px;
+}
+
+.area-content h3 {
+  margin: 2px 0 7px;
+
+  color: #ffffff;
+
+  font-size: 16px;
+
+  font-weight: 650;
+}
+
+.area-content p {
+  margin: 0;
+
+  color: #8296aa;
+
+  font-size: 12px;
+
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   SETA
+   ========================================================= */
+
+.area-arrow {
+  position: absolute;
+
+  right: 18px;
+  bottom: 18px;
+
+  color: #62788e;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.area-card:hover .area-arrow {
+  color: #ff5b22;
+
+  transform: translateX(3px);
+}
+
+
+/* =========================================================
+   FAVORITOS
+   ========================================================= */
+
+.favorites-section {
+  padding: 24px;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.17);
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(8, 24, 40, 0.88),
+      rgba(4, 16, 28, 0.94)
+    );
+}
+
+.favorites-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 20px;
+}
+
+.favorites-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+}
+
+.favorites-title > svg {
+  color: #ff5b22;
+}
+
+.favorites-title h2 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 19px;
+
+  font-weight: 650;
+}
+
+.favorites-title p {
+  margin: 5px 0 0;
+
+  color: #8195aa;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   BOTÃO VER TODOS
+   ========================================================= */
+
+.favorites-header > button {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 8px 12px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #9eb0c3;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease;
+}
+
+.favorites-header > button:hover {
+  color: #ff5b22;
+}
+
+
+/* =========================================================
+   LISTA DE FAVORITOS
+   ========================================================= */
+
+.favorites-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+.favorites-list button {
+  min-height: 48px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 0 14px;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.15);
+
+  border-radius: 8px;
+
+  background:
+    rgba(8, 25, 42, 0.8);
+
+  color: #b6c4d3;
+
+  font-size: 12px;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.favorites-list button:hover {
+  color: #ffffff;
+
+  border-color:
+    rgba(255, 91, 34, 0.35);
+
+  background:
+    rgba(255, 91, 34, 0.06);
+}
+
+.favorites-list button svg {
+  flex-shrink: 0;
+
+  color: #ff5b22;
+}
+
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .areas-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .favorites-list {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .dashboard-content {
+    margin-left: 72px;
+
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .dashboard-layout:has(.sidebar.collapsed)
+  .dashboard-content {
+    margin-left: 72px;
+  }
+
+  .dashboard-hero {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    padding: 30px;
+  }
+
+  .dashboard-status {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 650px) {
+  .dashboard-content {
+    margin-left: 72px;
+
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .dashboard-hero {
+    padding: 25px 20px;
+  }
+
+  .hero-text h1 {
+    font-size: 29px;
+  }
+
+  .areas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .favorites-list {
+    grid-template-columns: 1fr;
+  }
+}

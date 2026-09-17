@@ -1,0 +1,632 @@
+/* ============================================================
+   PÁGINA BAU
+   ============================================================ */
+
+.bau-page {
+  display: flex;
+  min-height: 100vh;
+
+  background: #020914;
+  color: #ffffff;
+}
+
+
+/* ============================================================
+   CONTEÚDO PRINCIPAL
+   ============================================================ */
+
+/*
+ * O Sidebar é fixed, então precisamos reservar espaço
+ * para ele no conteúdo.
+ *
+ * Expandido = 240px
+ * Recolhido = 72px
+ */
+
+.bau-content {
+  flex: 1;
+  min-width: 0;
+
+  margin-left: 240px;
+
+  transition:
+    margin-left 0.25s ease;
+}
+
+
+/*
+ * Quando o Sidebar estiver recolhido,
+ * o conteúdo acompanha automaticamente.
+ */
+
+.bau-page:has(.sidebar.collapsed) .bau-content {
+  margin-left: 72px;
+}
+
+
+.bau-main {
+  padding: 28px 32px 40px;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.bau-header {
+  margin-bottom: 24px;
+}
+
+.bau-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bau-title-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: rgba(255, 95, 31, 0.12);
+  color: #ff5f1f;
+}
+
+.bau-header h1 {
+  margin: 0;
+
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.bau-header p {
+  margin: 5px 0 0;
+
+  color: #8d9aaa;
+
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   TÍTULOS DE SEÇÃO
+   ============================================================ */
+
+.bau-section-title {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 16px;
+
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bau-section-title svg {
+  color: #ff5f1f;
+}
+
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.bau-filters {
+  padding: 20px;
+
+  margin-bottom: 24px;
+
+  background: #07111f;
+
+  border: 1px solid #172536;
+
+  border-radius: 14px;
+}
+
+.bau-filter-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, minmax(140px, 1fr))
+    auto;
+
+  gap: 14px;
+
+  align-items: end;
+}
+
+.bau-filter {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.bau-filter label {
+  color: #8d9aaa;
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bau-filter select {
+  width: 100%;
+  height: 40px;
+
+  padding: 0 12px;
+
+  border: 1px solid #26384d;
+  border-radius: 8px;
+
+  background: #020914;
+  color: #ffffff;
+
+  outline: none;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease;
+}
+
+.bau-filter select:hover,
+.bau-filter select:focus {
+  border-color: #ff5f1f;
+}
+
+.bau-reset-button {
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 0 14px;
+
+  border: 1px solid #26384d;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #b8c3d0;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.bau-reset-button:hover {
+  border-color: #ff5f1f;
+
+  color: #ffffff;
+
+  background: rgba(255, 95, 31, 0.08);
+}
+
+
+/* ============================================================
+   GRID PRINCIPAL
+   ============================================================ */
+
+.bau-dashboard-grid {
+  display: grid;
+
+  grid-template-columns:
+    240px
+    minmax(0, 1fr);
+
+  gap: 20px;
+
+  align-items: start;
+}
+
+
+/* ============================================================
+   PAINEL DE KPIs
+   ============================================================ */
+
+.bau-kpi-panel {
+  padding: 18px;
+
+  background: #07111f;
+
+  border: 1px solid #172536;
+
+  border-radius: 14px;
+
+  position: sticky;
+  top: 20px;
+}
+
+.bau-kpi-help {
+  margin: -7px 0 15px;
+
+  color: #69798c;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+.bau-kpi-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.bau-kpi-item {
+  width: 100%;
+
+  padding: 13px;
+
+  border: 1px solid transparent;
+
+  border-radius: 9px;
+
+  background: #0b1726;
+
+  color: #ffffff;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.bau-kpi-item:hover {
+  background: #101e2e;
+
+  border-color: #26384d;
+}
+
+.bau-kpi-item.selected {
+  background: rgba(255, 95, 31, 0.1);
+
+  border-color: #ff5f1f;
+}
+
+.bau-kpi-item-name {
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+.bau-kpi-item-description {
+  margin-top: 5px;
+
+  color: #738398;
+
+  font-size: 11px;
+
+  line-height: 1.4;
+}
+
+.bau-kpi-item.selected
+.bau-kpi-item-description {
+  color: #aeb9c7;
+}
+
+
+/* ============================================================
+   RESULTADOS
+   ============================================================ */
+
+.bau-results {
+  min-width: 0;
+}
+
+
+/* ============================================================
+   CARDS DE RESUMO
+   ============================================================ */
+
+.bau-summary-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(190px, 1fr)
+    );
+
+  gap: 14px;
+
+  margin-bottom: 20px;
+}
+
+.bau-summary-card {
+  padding: 18px;
+
+  background: #07111f;
+
+  border: 1px solid #172536;
+
+  border-radius: 14px;
+}
+
+.bau-summary-label {
+  color: #8d9aaa;
+
+  font-size: 12px;
+
+  font-weight: 500;
+}
+
+.bau-summary-value {
+  margin-top: 8px;
+
+  color: #ffffff;
+
+  font-size: 28px;
+
+  font-weight: 700;
+
+  letter-spacing: -0.5px;
+}
+
+.bau-summary-unit {
+  margin-top: 4px;
+
+  color: #69798c;
+
+  font-size: 11px;
+}
+
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+.bau-chart-card,
+.bau-table-card {
+  margin-bottom: 20px;
+
+  background: #07111f;
+
+  border: 1px solid #172536;
+
+  border-radius: 14px;
+
+  overflow: hidden;
+}
+
+.bau-card-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 20px;
+
+  border-bottom: 1px solid #172536;
+}
+
+.bau-card-header h2 {
+  margin: 0;
+
+  font-size: 15px;
+
+  font-weight: 600;
+}
+
+.bau-card-header p {
+  margin: 5px 0 0;
+
+  color: #69798c;
+
+  font-size: 12px;
+}
+
+.bau-chart-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: rgba(255, 95, 31, 0.1);
+
+  color: #ff5f1f;
+}
+
+
+/* ============================================================
+   PLACEHOLDER DO GRÁFICO
+   ============================================================ */
+
+.bau-chart-placeholder {
+  min-height: 320px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  color: #526276;
+}
+
+.bau-chart-placeholder svg {
+  color: #ff5f1f;
+
+  opacity: 0.7;
+
+  margin-bottom: 5px;
+}
+
+.bau-chart-placeholder strong {
+  color: #aeb9c7;
+
+  font-size: 14px;
+}
+
+.bau-chart-placeholder span {
+  color: #69798c;
+
+  font-size: 12px;
+}
+
+
+/* ============================================================
+   TABELA
+   ============================================================ */
+
+.bau-table-count {
+  padding: 5px 9px;
+
+  border-radius: 6px;
+
+  background: #0b1726;
+
+  color: #8d9aaa;
+
+  font-size: 11px;
+}
+
+.bau-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+.bau-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  white-space: nowrap;
+}
+
+.bau-table th,
+.bau-table td {
+  padding: 12px 14px;
+
+  border-bottom: 1px solid #172536;
+
+  text-align: left;
+
+  font-size: 12px;
+}
+
+.bau-table th {
+  background: #091523;
+
+  color: #8d9aaa;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  text-transform: uppercase;
+}
+
+.bau-table td {
+  color: #c7d0dc;
+}
+
+.bau-table tbody tr {
+  transition:
+    background 0.15s ease;
+}
+
+.bau-table tbody tr:hover {
+  background: #0b1726;
+}
+
+.bau-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1200px) {
+  .bau-filter-grid {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .bau-reset-button {
+    width: 100%;
+  }
+}
+
+
+@media (max-width: 900px) {
+  .bau-content {
+    margin-left: 72px;
+  }
+
+  .bau-page:has(.sidebar.collapsed) .bau-content {
+    margin-left: 72px;
+  }
+
+  .bau-main {
+    padding: 22px;
+  }
+
+  .bau-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bau-kpi-panel {
+    position: static;
+  }
+
+  .bau-kpi-list {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+
+@media (max-width: 650px) {
+  .bau-main {
+    padding: 16px;
+  }
+
+  .bau-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bau-kpi-list {
+    grid-template-columns: 1fr;
+  }
+
+  .bau-header h1 {
+    font-size: 24px;
+  }
+}

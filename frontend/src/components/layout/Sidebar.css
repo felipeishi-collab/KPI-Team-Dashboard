@@ -1,0 +1,467 @@
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.sidebar {
+  width: 240px;
+  height: 100vh;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  background:
+    linear-gradient(
+      180deg,
+      #071525 0%,
+      #04101d 100%
+    );
+
+  border-right:
+    1px solid rgba(91, 137, 180, 0.18);
+
+  z-index: 100;
+
+  transition:
+    width 0.25s ease;
+}
+
+
+/* ============================================================
+   SIDEBAR COLLAPSED
+   ============================================================ */
+
+.sidebar.collapsed {
+  width: 72px;
+}
+
+
+/* ============================================================
+   LOGO
+   ============================================================ */
+
+.sidebar-logo {
+  height: 80px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 0 22px;
+
+  border-bottom:
+    1px solid rgba(91, 137, 180, 0.15);
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+
+  transition:
+    padding 0.25s ease;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  justify-content: center;
+
+  padding: 0;
+}
+
+
+.sidebar-logo-icon {
+  min-width: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #ff5b22;
+}
+
+
+.sidebar-logo-text {
+  display: flex;
+  flex-direction: column;
+
+  color: white;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  line-height: 1.05;
+
+  white-space: nowrap;
+
+  opacity: 1;
+
+  transition:
+    opacity 0.15s ease;
+}
+
+.sidebar.collapsed .sidebar-logo-text {
+  opacity: 0;
+
+  width: 0;
+
+  overflow: hidden;
+}
+
+
+/* ============================================================
+   TOGGLE BUTTON
+   ============================================================ */
+
+.sidebar-toggle {
+  position: absolute;
+
+  top: 92px;
+  right: -12px;
+
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border:
+    1px solid rgba(91, 137, 180, 0.25);
+
+  border-radius: 50%;
+
+  background: #071525;
+
+  color: #aebed0;
+
+  cursor: pointer;
+
+  z-index: 110;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: #ff5b22;
+
+  border-color: #ff5b22;
+
+  color: white;
+}
+
+
+/* ============================================================
+   MENU
+   ============================================================ */
+
+.sidebar-menu {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  padding: 18px 8px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+/* ============================================================
+   MENU ITEM
+   ============================================================ */
+
+.sidebar-item {
+  position: relative;
+
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 0 18px;
+
+  border-radius: 9px;
+
+  color: #aebed0;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    padding 0.25s ease,
+    gap 0.25s ease;
+}
+
+
+/* Ícone */
+
+.sidebar-item svg {
+  min-width: 20px;
+
+  flex-shrink: 0;
+}
+
+
+/* Texto */
+
+.sidebar-item span {
+  opacity: 1;
+
+  transition:
+    opacity 0.15s ease;
+}
+
+
+/* ============================================================
+   MENU ITEM — COLLAPSED
+   ============================================================ */
+
+.sidebar.collapsed .sidebar-item {
+  justify-content: center;
+
+  gap: 0;
+
+  padding: 0;
+}
+
+.sidebar.collapsed .sidebar-item span {
+  opacity: 0;
+
+  width: 0;
+
+  overflow: hidden;
+}
+
+
+/* ============================================================
+   HOVER
+   ============================================================ */
+
+.sidebar-item:hover {
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.05);
+}
+
+
+/* ============================================================
+   ACTIVE
+   ============================================================ */
+
+.sidebar-item.active {
+  color: white;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 91, 34, 0.28),
+      rgba(255, 91, 34, 0.10)
+    );
+}
+
+
+.sidebar-item.active::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  width: 4px;
+  height: 100%;
+
+  border-radius:
+    0 5px 5px 0;
+
+  background: #ff5b22;
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.sidebar-footer {
+  height: 78px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 0 22px;
+
+  border-top:
+    1px solid rgba(91, 137, 180, 0.15);
+
+  color: white;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+
+  transition:
+    padding 0.25s ease,
+    gap 0.25s ease;
+}
+
+
+/* Footer recolhido */
+
+.sidebar.collapsed .sidebar-footer {
+  justify-content: center;
+
+  gap: 0;
+
+  padding: 0;
+}
+
+
+.sidebar-footer span {
+  white-space: nowrap;
+
+  opacity: 1;
+
+  transition:
+    opacity 0.15s ease;
+}
+
+
+.sidebar.collapsed .sidebar-footer span {
+  opacity: 0;
+
+  width: 0;
+
+  overflow: hidden;
+}
+
+
+/* ============================================================
+   SHOPEE LOGO
+   ============================================================ */
+
+.shopee-logo {
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 7px;
+
+  background: #ff5b22;
+
+  color: white;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  flex-shrink: 0;
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+.sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(174, 190, 208, 0.15);
+
+  border-radius: 10px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 72px;
+  }
+
+  .sidebar-logo {
+    justify-content: center;
+
+    padding: 0;
+  }
+
+  .sidebar-logo-text {
+    opacity: 0;
+
+    width: 0;
+
+    overflow: hidden;
+  }
+
+  .sidebar-item {
+    justify-content: center;
+
+    gap: 0;
+
+    padding: 0;
+  }
+
+  .sidebar-item span {
+    opacity: 0;
+
+    width: 0;
+
+    overflow: hidden;
+  }
+
+  .sidebar-footer {
+    justify-content: center;
+
+    gap: 0;
+
+    padding: 0;
+  }
+
+  .sidebar-footer span {
+    opacity: 0;
+
+    width: 0;
+
+    overflow: hidden;
+  }
+
+  .sidebar-toggle {
+    display: none;
+  }
+}
