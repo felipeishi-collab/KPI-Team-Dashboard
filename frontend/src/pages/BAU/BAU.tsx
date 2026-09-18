@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import {
   BarChart3,
   Filter,
   RotateCcw,
-  Search,
   TrendingUp,
 } from "lucide-react";
 
@@ -13,283 +13,551 @@ import Topbar from "../../components/layout/Topbar";
 import { bauKpis } from "./bauKpis";
 
 import "./BAU.css";
+
 interface User {
   name: string;
   email: string;
 }
 
-interface BauDataRow {
-  date: string;
-  station_id: string;
-  station_name: string;
-  station_code: string;
-  uf: string;
-  regional: string;
-
-  qty_delivering: number;
-  qty_ats: number;
-  qty_drivers: number;
+interface PeriodData {
+  period: string;
+  qty_at_delivering: number;
+  at_no_piso: number;
 }
 
-/*
- * MOCK DATA
- *
- * Por enquanto estamos utilizando dados fictícios
- * apenas para construir e validar a interface.
- *
- * Depois iremos substituir isso pela API do backend.
- */
-const mockData: BauDataRow[] = [
-  {
-    date: "01/09",
-    station_id: "SP01",
-    station_name: "São Paulo",
-    station_code: "SPX01",
-    uf: "SP",
-    regional: "Sudeste",
-    qty_delivering: 12450,
-    qty_ats: 320,
-    qty_drivers: 285,
-  },
-  {
-    date: "02/09",
-    station_id: "SP01",
-    station_name: "São Paulo",
-    station_code: "SPX01",
-    uf: "SP",
-    regional: "Sudeste",
-    qty_delivering: 13120,
-    qty_ats: 335,
-    qty_drivers: 292,
-  },
-  {
-    date: "03/09",
-    station_id: "SP01",
-    station_name: "São Paulo",
-    station_code: "SPX01",
-    uf: "SP",
-    regional: "Sudeste",
-    qty_delivering: 12880,
-    qty_ats: 328,
-    qty_drivers: 289,
-  },
-  {
-    date: "04/09",
-    station_id: "SP01",
-    station_name: "São Paulo",
-    station_code: "SPX01",
-    uf: "SP",
-    regional: "Sudeste",
-    qty_delivering: 13650,
-    qty_ats: 342,
-    qty_drivers: 298,
-  },
-  {
-    date: "05/09",
-    station_id: "SP01",
-    station_name: "São Paulo",
-    station_code: "SPX01",
-    uf: "SP",
-    regional: "Sudeste",
-    qty_delivering: 14120,
-    qty_ats: 351,
-    qty_drivers: 305,
-  },
-  {
-    date: "01/09",
-    station_id: "RJ01",
-    station_name: "Rio de Janeiro",
-    station_code: "RJX01",
-    uf: "RJ",
-    regional: "Sudeste",
-    qty_delivering: 9850,
-    qty_ats: 265,
-    qty_drivers: 230,
-  },
-  {
-    date: "02/09",
-    station_id: "RJ01",
-    station_name: "Rio de Janeiro",
-    station_code: "RJX01",
-    uf: "RJ",
-    regional: "Sudeste",
-    qty_delivering: 10120,
-    qty_ats: 272,
-    qty_drivers: 235,
-  },
-  {
-    date: "03/09",
-    station_id: "RJ01",
-    station_name: "Rio de Janeiro",
-    station_code: "RJX01",
-    uf: "RJ",
-    regional: "Sudeste",
-    qty_delivering: 10450,
-    qty_ats: 280,
-    qty_drivers: 239,
-  },
-];
+interface ApiResponse {
+  data: {
+    summary: {
+      qty_at_delivering: number;
+      at_no_piso: number;
+      percent_at_no_piso: number;
+    };
 
-/*
- * Valores possíveis dos filtros.
- *
- * No futuro eles poderão vir diretamente
- * da API / BigQuery.
- */
-const stationIds = [
-  ...new Set(mockData.map((row) => row.station_id)),
-];
+    daily: PeriodData[];
+    weekly: PeriodData[];
+    monthly: PeriodData[];
+  };
+}
 
-const stationNames = [
-  ...new Set(mockData.map((row) => row.station_name)),
-];
+interface StationOption {
+  station_id: number;
+  station_code: string;
+  station_name: string;
+}
 
-const stationCodes = [
-  ...new Set(mockData.map((row) => row.station_code)),
-];
-
-const ufs = [
-  ...new Set(mockData.map((row) => row.uf)),
-];
-
-const regionals = [
-  ...new Set(mockData.map((row) => row.regional)),
-];
+type Granularity =
+  | "daily"
+  | "weekly"
+  | "monthly";
 
 function BAU() {
-  /*
-   * ============================================================
-   * FILTROS
-   * ============================================================
-   */
+  // ============================================================
+  // USUÁRIO
+  // ============================================================
 
-  const [stationId, setStationId] = useState("");
-  const [stationName, setStationName] = useState("");
-  const [stationCode, setStationCode] = useState("");
-  const [uf, setUf] = useState("");
-  const [regional, setRegional] = useState("");
-    /*
-   * ============================================================
-   * USUÁRIO LOGADO
-   * ============================================================
-   */
-  const user: User = JSON.parse(
-  localStorage.getItem("kpi_user") || '{"name":"","email":""}'
-);
+  const storedUser =
+    localStorage.getItem("kpi_user");
 
-  /*
-   * ============================================================
-   * KPIs SELECIONADOS
-   * ============================================================
-   *
-   * Começamos com Qty Delivering selecionado.
-   *
-   * Depois o usuário poderá selecionar vários KPIs
-   * simultaneamente.
-   */
+  const user: User = storedUser
+    ? JSON.parse(storedUser)
+    : {
+        name: "",
+        email: "",
+      };
 
-  const [selectedKpis, setSelectedKpis] = useState<string[]>([
-    "qty_delivering",
-  ]);
+  // ============================================================
+  // FILTROS
+  // ============================================================
 
-  /*
-   * ============================================================
-   * FILTRAGEM
-   * ============================================================
-   */
+  const [stationCode, setStationCode] =
+    useState("");
 
-  const filteredData = useMemo(() => {
-    return mockData.filter((row) => {
-      const matchesStationId =
-        !stationId || row.station_id === stationId;
+  const [stationId, setStationId] =
+    useState("");
 
-      const matchesStationName =
-        !stationName || row.station_name === stationName;
+  const [stationName, setStationName] =
+    useState("");
 
-      const matchesStationCode =
-        !stationCode || row.station_code === stationCode;
+  const [startDate, setStartDate] =
+    useState("");
 
-      const matchesUf =
-        !uf || row.uf === uf;
+  const [endDate, setEndDate] =
+    useState("");
 
-      const matchesRegional =
-        !regional || row.regional === regional;
+  // ============================================================
+  // LISTA DE ESTAÇÕES (AUTOCOMPLETE)
+  // ============================================================
 
-      return (
-        matchesStationId &&
-        matchesStationName &&
-        matchesStationCode &&
-        matchesUf &&
-        matchesRegional
-      );
-    });
+  const [stations, setStations] = useState<
+    StationOption[]
+  >([]);
+
+  useEffect(() => {
+    async function fetchStations() {
+      try {
+        const response = await fetch(
+          "http://localhost:3001/api/kpis/stations"
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result: {
+          data: StationOption[];
+        } = await response.json();
+
+        setStations(result.data || []);
+      } catch (err) {
+        console.error(
+          "Erro ao buscar lista de estações:",
+          err
+        );
+      }
+    }
+
+    fetchStations();
+  }, []);
+
+  const stationCodeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          stations.map(
+            (item) => item.station_code
+          )
+        )
+      ),
+    [stations]
+  );
+
+  const stationIdOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          stations.map((item) =>
+            String(item.station_id)
+          )
+        )
+      ),
+    [stations]
+  );
+
+  const stationNameOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          stations.map(
+            (item) => item.station_name
+          )
+        )
+      ),
+    [stations]
+  );
+
+  // ============================================================
+  // KPI SELECIONADO
+  // ============================================================
+
+  const [selectedKpis, setSelectedKpis] =
+    useState<string[]>([
+      "at_no_piso",
+      "percent_at_no_piso",
+    ]);
+
+  // ============================================================
+  // GRANULARIDADE
+  // ============================================================
+
+  const [granularity, setGranularity] =
+    useState<Granularity>("daily");
+
+  // ============================================================
+  // DADOS
+  // ============================================================
+
+  const [apiData, setApiData] =
+    useState<ApiResponse["data"] | null>(
+      null
+    );
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  // ============================================================
+  // HOVER DO GRÁFICO
+  // ============================================================
+
+  const [hoveredPoint, setHoveredPoint] =
+    useState<{
+      index: number;
+      x: number;
+      y: number;
+    } | null>(null);
+
+  // ============================================================
+  // BUSCAR DADOS DA API
+  // ============================================================
+
+  useEffect(() => {
+    async function fetchKpiData() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const params =
+          new URLSearchParams();
+
+        if (startDate) {
+          params.append(
+            "startDate",
+            startDate
+          );
+        }
+
+        if (endDate) {
+          params.append(
+            "endDate",
+            endDate
+          );
+        }
+
+        if (stationCode) {
+          params.append(
+            "station",
+            stationCode
+          );
+        }
+
+        if (stationId) {
+          params.append(
+            "stationId",
+            stationId
+          );
+        }
+
+        if (stationName) {
+          params.append(
+            "stationName",
+            stationName
+          );
+        }
+
+        const queryString =
+          params.toString();
+
+        const url = queryString
+          ? `http://localhost:3001/api/kpis/at-no-piso?${queryString}`
+          : "http://localhost:3001/api/kpis/at-no-piso";
+
+        const response =
+          await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(
+            `Erro HTTP ${response.status}`
+          );
+        }
+
+        const result: ApiResponse =
+          await response.json();
+
+        setApiData(result.data);
+      } catch (err) {
+        console.error(
+          "Erro ao buscar KPI AT no Piso:",
+          err
+        );
+
+        setError(
+          "Não foi possível carregar os dados do KPI."
+        );
+
+        setApiData(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchKpiData();
   }, [
+    startDate,
+    endDate,
+    stationCode,
     stationId,
     stationName,
-    stationCode,
-    uf,
-    regional,
   ]);
 
-  /*
-   * ============================================================
-   * SELEÇÃO DE KPI
-   * ============================================================
-   */
-
-  const toggleKpi = (kpiId: string) => {
-    setSelectedKpis((current) => {
-      if (current.includes(kpiId)) {
-        return current.filter((id) => id !== kpiId);
-      }
-
-      return [...current, kpiId];
-    });
-  };
-
-  /*
-   * ============================================================
-   * RESET DOS FILTROS
-   * ============================================================
-   */
+  // ============================================================
+  // RESET DOS FILTROS
+  // ============================================================
 
   const resetFilters = () => {
+    setStationCode("");
     setStationId("");
     setStationName("");
-    setStationCode("");
-    setUf("");
-    setRegional("");
+    setStartDate("");
+    setEndDate("");
   };
 
-  /*
-   * ============================================================
-   * TOTAL DO KPI
-   * ============================================================
-   */
+  // ============================================================
+  // DADOS DO GRÁFICO
+  // ============================================================
 
-  const getTotal = (dataKey: string) => {
-    return filteredData.reduce((total, row) => {
-      const value = row[dataKey as keyof BauDataRow];
+  const chartData = useMemo(() => {
+    if (!apiData) {
+      return [];
+    }
 
-      return total + (typeof value === "number" ? value : 0);
-    }, 0);
+    return apiData[granularity] || [];
+  }, [
+    apiData,
+    granularity,
+  ]);
+
+  // ============================================================
+  // SELEÇÃO DE KPI
+  // ============================================================
+
+  const toggleKpi = (
+    kpiId: string
+  ) => {
+    setSelectedKpis(
+      (current) => {
+        if (
+          current.includes(kpiId)
+        ) {
+          return current.filter(
+            (id) =>
+              id !== kpiId
+          );
+        }
+
+        return [
+          ...current,
+          kpiId,
+        ];
+      }
+    );
   };
 
-  /*
-   * ============================================================
-   * RENDER
-   * ============================================================
-   */
+  // ============================================================
+  // FORMATAÇÃO DE DATA
+  // ============================================================
+
+  const formatDate = (
+    date: string
+  ) => {
+    if (!date) {
+      return "-";
+    }
+
+    const parts =
+      date.split("-");
+
+    if (
+      parts.length !== 3
+    ) {
+      return date;
+    }
+
+    return `${parts[2]}/${parts[1]}`;
+  };
+
+  // ============================================================
+  // VALOR MÁXIMO DO GRÁFICO
+  // ============================================================
+
+  const maxValue = useMemo(() => {
+    if (!chartData.length) {
+      return 0;
+    }
+
+    return Math.max(
+      ...chartData.map(
+        (item) =>
+          item.at_no_piso
+      )
+    );
+  }, [chartData]);
+
+  // ============================================================
+  // ESCALA DO EIXO Y
+  // ============================================================
+
+  const chartMaxValue =
+    useMemo(() => {
+      if (maxValue <= 0) {
+        return 100;
+      }
+
+      const magnitude =
+        Math.pow(
+          10,
+          Math.floor(
+            Math.log10(maxValue)
+          )
+        );
+
+      const normalized =
+        maxValue / magnitude;
+
+      let multiplier = 1;
+
+      if (
+        normalized <= 1
+      ) {
+        multiplier = 1;
+      } else if (
+        normalized <= 2
+      ) {
+        multiplier = 2;
+      } else if (
+        normalized <= 5
+      ) {
+        multiplier = 5;
+      } else {
+        multiplier = 10;
+      }
+
+      return (
+        multiplier *
+        magnitude
+      );
+    }, [maxValue]);
+
+  // ============================================================
+  // PONTOS DO GRÁFICO
+  // ============================================================
+
+  const chartPoints = useMemo(() => {
+    if (
+      !chartData.length ||
+      chartMaxValue <= 0
+    ) {
+      return "";
+    }
+
+    const width = 1000;
+    const height = 400;
+
+    const paddingLeft = 70;
+    const paddingRight = 30;
+    const paddingTop = 40;
+    const paddingBottom = 50;
+
+    const chartWidth =
+      width -
+      paddingLeft -
+      paddingRight;
+
+    const chartHeight =
+      height -
+      paddingTop -
+      paddingBottom;
+
+    return chartData
+      .map(
+        (
+          item,
+          index
+        ) => {
+          const x =
+            chartData.length ===
+            1
+              ? width / 2
+              : paddingLeft +
+                (index /
+                  (chartData.length -
+                    1)) *
+                  chartWidth;
+
+          const y =
+            paddingTop +
+            chartHeight -
+            (item.at_no_piso /
+              chartMaxValue) *
+              chartHeight;
+
+          return `${x},${y}`;
+        }
+      )
+      .join(" ");
+  }, [
+    chartData,
+    chartMaxValue,
+  ]);
+
+  // ============================================================
+  // INTERVALO DAS LABELS DO EIXO X
+  // ============================================================
+
+  const xLabelInterval =
+    Math.max(
+      1,
+      Math.ceil(
+        chartData.length / 7
+      )
+    );
+
+  // ============================================================
+  // DADOS DO TOOLTIP (VALOR + PERCENTUAL DO PONTO)
+  // ============================================================
+
+  const hoveredTooltip = useMemo(() => {
+    if (!hoveredPoint) {
+      return null;
+    }
+
+    const item =
+      chartData[hoveredPoint.index];
+
+    if (!item) {
+      return null;
+    }
+
+    const percent =
+      item.qty_at_delivering > 0
+        ? (item.at_no_piso /
+            item.qty_at_delivering) *
+          100
+        : 0;
+
+    return {
+      item,
+      percent,
+    };
+  }, [
+    hoveredPoint,
+    chartData,
+  ]);
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <div className="bau-page">
+
+      {/* ======================================================
+          SIDEBAR
+      ====================================================== */}
+
       <Sidebar />
 
       <div className="bau-content">
+
+        {/* ====================================================
+            TOPBAR
+        ==================================================== */}
+
         <Topbar
-            userName={user.name}
-            userEmail={user.email}
-            />
+          userName={user.name}
+          userEmail={user.email}
+        />
 
         <main className="bau-main">
 
@@ -298,22 +566,31 @@ function BAU() {
           ================================================== */}
 
           <section className="bau-header">
-            <div>
-              <div className="bau-title-wrapper">
-                <div className="bau-title-icon">
-                  <BarChart3 size={26} />
-                </div>
 
-                <div>
-                  <h1>BAU</h1>
+            <div className="bau-title-wrapper">
 
-                  <p>
-                    Business as Usual — visão operacional dos
-                    principais indicadores.
-                  </p>
-                </div>
+              <div className="bau-title-icon">
+                <BarChart3
+                  size={26}
+                />
               </div>
+
+              <div>
+
+                <h1>
+                  BAU
+                </h1>
+
+                <p>
+                  Business as Usual —
+                  visão operacional dos
+                  principais indicadores.
+                </p>
+
+              </div>
+
             </div>
+
           </section>
 
           {/* ==================================================
@@ -323,361 +600,1139 @@ function BAU() {
           <section className="bau-filters">
 
             <div className="bau-section-title">
-              <Filter size={18} />
 
-              <span>Filtros</span>
+              <Filter
+                size={18}
+              />
+
+              <span>
+                Filtros
+              </span>
+
             </div>
 
             <div className="bau-filter-grid">
 
-              <div className="bau-filter">
-                <label>Station ID</label>
-
-                <select
-                  value={stationId}
-                  onChange={(event) =>
-                    setStationId(event.target.value)
-                  }
-                >
-                  <option value="">Todos</option>
-
-                  {stationIds.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* STATION CODE */}
 
               <div className="bau-filter">
-                <label>Station Name</label>
 
-                <select
-                  value={stationName}
-                  onChange={(event) =>
-                    setStationName(event.target.value)
+                <label>
+                  Station Code
+                </label>
+
+                <input
+                  type="text"
+                  list="station-code-options"
+                  value={
+                    stationCode
                   }
-                >
-                  <option value="">Todos</option>
+                  onChange={(
+                    event
+                  ) =>
+                    setStationCode(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Ex.: HUB-LSP-93"
+                  autoComplete="off"
+                />
 
-                  {stationNames.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                <datalist id="station-code-options">
+                  {stationCodeOptions.map(
+                    (code) => (
+                      <option
+                        key={code}
+                        value={code}
+                      />
+                    )
+                  )}
+                </datalist>
+
               </div>
+
+              {/* STATION ID */}
 
               <div className="bau-filter">
-                <label>Station Code</label>
 
-                <select
-                  value={stationCode}
-                  onChange={(event) =>
-                    setStationCode(event.target.value)
+                <label>
+                  Station ID
+                </label>
+
+                <input
+                  type="text"
+                  list="station-id-options"
+                  value={
+                    stationId
                   }
-                >
-                  <option value="">Todos</option>
+                  onChange={(
+                    event
+                  ) =>
+                    setStationId(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Ex.: 11783"
+                  autoComplete="off"
+                />
 
-                  {stationCodes.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                <datalist id="station-id-options">
+                  {stationIdOptions.map(
+                    (id) => (
+                      <option
+                        key={id}
+                        value={id}
+                      />
+                    )
+                  )}
+                </datalist>
+
               </div>
+
+              {/* STATION NAME */}
 
               <div className="bau-filter">
-                <label>UF</label>
 
-                <select
-                  value={uf}
-                  onChange={(event) =>
-                    setUf(event.target.value)
+                <label>
+                  Station Name
+                </label>
+
+                <input
+                  type="text"
+                  list="station-name-options"
+                  value={
+                    stationName
                   }
-                >
-                  <option value="">Todos</option>
+                  onChange={(
+                    event
+                  ) =>
+                    setStationName(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Ex.: Santo André"
+                  autoComplete="off"
+                />
 
-                  {ufs.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                <datalist id="station-name-options">
+                  {stationNameOptions.map(
+                    (name) => (
+                      <option
+                        key={name}
+                        value={name}
+                      />
+                    )
+                  )}
+                </datalist>
+
               </div>
+
+              {/* DATA INICIAL */}
 
               <div className="bau-filter">
-                <label>Regional</label>
 
-                <select
-                  value={regional}
-                  onChange={(event) =>
-                    setRegional(event.target.value)
+                <label>
+                  Data inicial
+                </label>
+
+                <input
+                  type="date"
+                  value={
+                    startDate
                   }
-                >
-                  <option value="">Todos</option>
+                  onChange={(
+                    event
+                  ) =>
+                    setStartDate(
+                      event.target
+                        .value
+                    )
+                  }
+                />
 
-                  {regionals.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
               </div>
+
+              {/* DATA FINAL */}
+
+              <div className="bau-filter">
+
+                <label>
+                  Data final
+                </label>
+
+                <input
+                  type="date"
+                  value={
+                    endDate
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setEndDate(
+                      event.target
+                        .value
+                    )
+                  }
+                />
+
+              </div>
+
+              {/* RESET */}
 
               <button
                 className="bau-reset-button"
-                onClick={resetFilters}
+                onClick={
+                  resetFilters
+                }
               >
-                <RotateCcw size={16} />
+
+                <RotateCcw
+                  size={16}
+                />
 
                 Limpar filtros
+
               </button>
 
             </div>
+
           </section>
 
           {/* ==================================================
-              CONTEÚDO
+              GRID PRINCIPAL
           ================================================== */}
 
           <section className="bau-dashboard-grid">
 
-            {/* ==================================================
-                KPI SELECTOR
-            ================================================== */}
+            {/* =================================================
+                PAINEL LATERAL DE KPIs
+            ================================================= */}
 
             <aside className="bau-kpi-panel">
 
               <div className="bau-section-title">
-                <TrendingUp size={18} />
 
-                <span>KPIs</span>
+                <TrendingUp
+                  size={18}
+                />
+
+                <span>
+                  KPIs
+                </span>
+
               </div>
 
               <p className="bau-kpi-help">
-                Selecione um ou mais indicadores.
+                Selecione um ou mais
+                indicadores.
               </p>
 
               <div className="bau-kpi-list">
 
-                {bauKpis.map((kpi) => {
-                  const isSelected =
-                    selectedKpis.includes(kpi.id);
+                {bauKpis.map(
+                  (kpi) => {
 
-                  return (
-                    <button
-                      key={kpi.id}
-                      className={`bau-kpi-item ${
-                        isSelected ? "selected" : ""
-                      }`}
-                      onClick={() => toggleKpi(kpi.id)}
-                    >
-                      <div className="bau-kpi-item-name">
-                        {kpi.name}
-                      </div>
+                    const isSelected =
+                      selectedKpis.includes(
+                        kpi.id
+                      );
 
-                      <div className="bau-kpi-item-description">
-                        {kpi.description}
-                      </div>
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={
+                          kpi.id
+                        }
+                        className={`bau-kpi-item ${
+                          isSelected
+                            ? "selected"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          toggleKpi(
+                            kpi.id
+                          )
+                        }
+                      >
+
+                        <div className="bau-kpi-item-name">
+                          {
+                            kpi.name
+                          }
+                        </div>
+
+                        <div className="bau-kpi-item-description">
+                          {
+                            kpi.description
+                          }
+                        </div>
+
+                      </button>
+                    );
+
+                  }
+                )}
 
               </div>
+
             </aside>
 
-            {/* ==================================================
-                RESULTADO
-            ================================================== */}
+            {/* =================================================
+                RESULTADOS
+            ================================================= */}
 
             <div className="bau-results">
 
-              {/* ==============================================
-                  SUMMARY CARDS
-              ============================================== */}
+              {/* =================================================
+                  LOADING
+              ================================================= */}
 
-              <div className="bau-summary-grid">
+              {loading && (
 
-                {selectedKpis.map((kpiId) => {
-                  const kpi = bauKpis.find(
-                    (item) => item.id === kpiId
-                  );
+                <section className="bau-chart-card">
 
-                  if (!kpi) return null;
+                  <div className="bau-chart-placeholder">
 
-                  return (
-                    <div
-                      className="bau-summary-card"
-                      key={kpi.id}
-                    >
-                      <div className="bau-summary-label">
-                        {kpi.name}
-                      </div>
+                    <strong>
+                      Carregando dados...
+                    </strong>
 
-                      <div className="bau-summary-value">
-                        {getTotal(kpi.dataKey).toLocaleString(
-                          "pt-BR"
-                        )}
-                      </div>
+                    <span>
+                      Buscando informações
+                      do KPI.
+                    </span>
 
-                      <div className="bau-summary-unit">
-                        {kpi.unit}
-                      </div>
+                  </div>
+
+                </section>
+
+              )}
+
+              {/* =================================================
+                  ERRO
+              ================================================= */}
+
+              {!loading &&
+                error && (
+
+                  <section className="bau-chart-card">
+
+                    <div className="bau-chart-placeholder">
+
+                      <strong>
+                        Erro ao carregar
+                        dados
+                      </strong>
+
+                      <span>
+                        {error}
+                      </span>
+
                     </div>
-                  );
-                })}
 
-              </div>
+                  </section>
 
-              {/* ==============================================
-                  CHART
-              ============================================== */}
+                )}
 
-              <section className="bau-chart-card">
+              {/* =================================================
+                  DADOS
+              ================================================= */}
 
-                <div className="bau-card-header">
+              {!loading &&
+                !error &&
+                apiData && (
 
-                  <div>
-                    <h2>Evolução dos KPIs</h2>
+                  <>
 
-                    <p>
-                      Visualização histórica dos indicadores
-                      selecionados.
-                    </p>
-                  </div>
+                    {/* =========================================
+                        SUMMARY
+                    ========================================= */}
 
-                  <div className="bau-chart-icon">
-                    <TrendingUp size={20} />
-                  </div>
+                    <div className="bau-summary-grid">
 
-                </div>
+                      {selectedKpis.map(
+                        (kpiId) => {
 
-                <div className="bau-chart-placeholder">
+                          const kpi =
+                            bauKpis.find(
+                              (
+                                item
+                              ) =>
+                                item.id ===
+                                kpiId
+                            );
 
-                  <BarChart3 size={42} />
+                          if (!kpi) {
+                            return null;
+                          }
 
-                  <strong>
-                    Gráfico de linhas
-                  </strong>
+                          let value =
+                            0;
 
-                  <span>
-                    O gráfico será conectado aos KPIs
-                    selecionados.
-                  </span>
+                          if (
+                            kpi.dataKey ===
+                            "at_no_piso"
+                          ) {
+                            value =
+                              apiData
+                                .summary
+                                .at_no_piso;
+                          } else if (
+                            kpi.dataKey ===
+                            "percent_at_no_piso"
+                          ) {
+                            value =
+                              apiData
+                                .summary
+                                .percent_at_no_piso;
+                          }
 
-                </div>
-
-              </section>
-
-              {/* ==============================================
-                  TABLE
-              ============================================== */}
-
-              <section className="bau-table-card">
-
-                <div className="bau-card-header">
-
-                  <div>
-                    <h2>Detalhamento</h2>
-
-                    <p>
-                      Dados utilizados para os indicadores
-                      selecionados.
-                    </p>
-                  </div>
-
-                  <div className="bau-table-count">
-                    {filteredData.length} registros
-                  </div>
-
-                </div>
-
-                <div className="bau-table-wrapper">
-
-                  <table className="bau-table">
-
-                    <thead>
-                      <tr>
-
-                        <th>Data</th>
-                        <th>Station ID</th>
-                        <th>Station Name</th>
-                        <th>Station Code</th>
-                        <th>UF</th>
-                        <th>Regional</th>
-
-                        {selectedKpis.map((kpiId) => {
-                          const kpi = bauKpis.find(
-                            (item) => item.id === kpiId
-                          );
-
-                          if (!kpi) return null;
+                          const formattedValue =
+                            kpi.dataKey ===
+                            "percent_at_no_piso"
+                              ? value.toLocaleString(
+                                  "pt-BR",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  }
+                                )
+                              : value.toLocaleString(
+                                  "pt-BR"
+                                );
 
                           return (
-                            <th key={kpi.id}>
-                              {kpi.name}
-                            </th>
+                            <div
+                              className="bau-summary-card"
+                              key={
+                                kpi.id
+                              }
+                            >
+
+                              <div className="bau-summary-label">
+                                {
+                                  kpi.name
+                                }
+                              </div>
+
+                              <div className="bau-summary-value">
+                                {
+                                  formattedValue
+                                }
+                              </div>
+
+                              <div className="bau-summary-unit">
+                                {
+                                  kpi.unit
+                                }
+                              </div>
+
+                            </div>
                           );
-                        })}
 
-                      </tr>
-                    </thead>
+                        }
+                      )}
 
-                    <tbody>
+                    </div>
 
-                      {filteredData.map((row, index) => (
-                        <tr key={`${row.station_id}-${row.date}-${index}`}>
+                    {/* =========================================
+                        GRÁFICO
+                    ========================================= */}
 
-                          <td>{row.date}</td>
+                    <section className="bau-chart-card">
 
-                          <td>{row.station_id}</td>
+                      {/* =======================================
+                          HEADER DO GRÁFICO
+                      ======================================= */}
 
-                          <td>{row.station_name}</td>
+                      <div className="bau-card-header">
 
-                          <td>{row.station_code}</td>
+                        <div>
 
-                          <td>{row.uf}</td>
+                          <h2>
+                            ATs no piso —
+                            Evolução
+                          </h2>
 
-                          <td>{row.regional}</td>
+                          <p>
+                            Evolução do
+                            indicador ao
+                            longo do período
+                            selecionado.
+                          </p>
 
-                          {selectedKpis.map((kpiId) => {
-                            const kpi = bauKpis.find(
-                              (item) => item.id === kpiId
+                        </div>
+
+                        <div className="bau-chart-icon">
+
+                          <TrendingUp
+                            size={20}
+                          />
+
+                        </div>
+
+                      </div>
+
+                      {/* =======================================
+                          CONTROLES
+                      ======================================= */}
+
+                      <div className="bau-chart-controls">
+
+                        <button
+                          className={
+                            granularity ===
+                            "daily"
+                              ? "active"
+                              : ""
+                          }
+                          onClick={() => {
+                            setGranularity(
+                              "daily"
                             );
-
-                            if (!kpi) return null;
-
-                            const value =
-                              row[
-                                kpi.dataKey as keyof BauDataRow
-                              ];
-
-                            return (
-                              <td key={kpi.id}>
-                                {typeof value === "number"
-                                  ? value.toLocaleString("pt-BR")
-                                  : "-"}
-                              </td>
+                            setHoveredPoint(
+                              null
                             );
-                          })}
+                          }}
+                        >
+                          Diário
+                        </button>
 
-                        </tr>
-                      ))}
+                        <button
+                          className={
+                            granularity ===
+                            "weekly"
+                              ? "active"
+                              : ""
+                          }
+                          onClick={() => {
+                            setGranularity(
+                              "weekly"
+                            );
+                            setHoveredPoint(
+                              null
+                            );
+                          }}
+                        >
+                          Semanal
+                        </button>
 
-                    </tbody>
+                        <button
+                          className={
+                            granularity ===
+                            "monthly"
+                              ? "active"
+                              : ""
+                          }
+                          onClick={() => {
+                            setGranularity(
+                              "monthly"
+                            );
+                            setHoveredPoint(
+                              null
+                            );
+                          }}
+                        >
+                          Mensal
+                        </button>
 
-                  </table>
+                      </div>
 
-                </div>
+                      {/* =======================================
+                          GRÁFICO
+                      ======================================= */}
 
-              </section>
+                      {chartData.length ===
+                      0 ? (
+
+                        <div className="bau-chart-placeholder">
+
+                          <strong>
+                            Nenhum dado
+                            encontrado
+                          </strong>
+
+                          <span>
+                            Ajuste os filtros
+                            selecionados.
+                          </span>
+
+                        </div>
+
+                      ) : (
+
+                        <div className="bau-line-chart">
+
+                          <svg
+                            viewBox="0 0 1000 400"
+                            className="bau-line-chart-svg"
+                            preserveAspectRatio="none"
+                          >
+
+                            {/* =================================
+                                GRID
+                            ================================= */}
+
+                            <line
+                              x1="70"
+                              y1="40"
+                              x2="970"
+                              y2="40"
+                              className="chart-grid-line"
+                            />
+
+                            <line
+                              x1="70"
+                              y1="117.5"
+                              x2="970"
+                              y2="117.5"
+                              className="chart-grid-line"
+                            />
+
+                            <line
+                              x1="70"
+                              y1="195"
+                              x2="970"
+                              y2="195"
+                              className="chart-grid-line"
+                            />
+
+                            <line
+                              x1="70"
+                              y1="272.5"
+                              x2="970"
+                              y2="272.5"
+                              className="chart-grid-line"
+                            />
+
+                            <line
+                              x1="70"
+                              y1="350"
+                              x2="970"
+                              y2="350"
+                              className="chart-axis-line"
+                            />
+
+                            {/* =================================
+                                EIXO Y
+                            ================================= */}
+
+                            <text
+                              x="58"
+                              y="355"
+                              textAnchor="end"
+                              className="chart-axis-label"
+                            >
+                              0
+                            </text>
+
+                            <text
+                              x="58"
+                              y="277"
+                              textAnchor="end"
+                              className="chart-axis-label"
+                            >
+                              {Math.round(
+                                chartMaxValue *
+                                  0.25
+                              ).toLocaleString(
+                                "pt-BR"
+                              )}
+                            </text>
+
+                            <text
+                              x="58"
+                              y="200"
+                              textAnchor="end"
+                              className="chart-axis-label"
+                            >
+                              {Math.round(
+                                chartMaxValue *
+                                  0.5
+                              ).toLocaleString(
+                                "pt-BR"
+                              )}
+                            </text>
+
+                            <text
+                              x="58"
+                              y="122"
+                              textAnchor="end"
+                              className="chart-axis-label"
+                            >
+                              {Math.round(
+                                chartMaxValue *
+                                  0.75
+                              ).toLocaleString(
+                                "pt-BR"
+                              )}
+                            </text>
+
+                            <text
+                              x="58"
+                              y="45"
+                              textAnchor="end"
+                              className="chart-axis-label"
+                            >
+                              {chartMaxValue.toLocaleString(
+                                "pt-BR"
+                              )}
+                            </text>
+
+                            {/* =================================
+                                LINHA PRINCIPAL
+                            ================================= */}
+
+                            <polyline
+                              points={
+                                chartPoints
+                              }
+                              fill="none"
+                              className="bau-chart-line"
+                            />
+
+                            {/* =================================
+                                ÁREAS DE HOVER
+                            ================================= */}
+
+                            {chartData.map(
+                              (
+                                item,
+                                index
+                              ) => {
+
+                                const width =
+                                  1000;
+
+                                const height =
+                                  400;
+
+                                const paddingLeft =
+                                  70;
+
+                                const paddingRight =
+                                  30;
+
+                                const paddingTop =
+                                  40;
+
+                                const paddingBottom =
+                                  50;
+
+                                const chartWidth =
+                                  width -
+                                  paddingLeft -
+                                  paddingRight;
+
+                                const chartHeight =
+                                  height -
+                                  paddingTop -
+                                  paddingBottom;
+
+                                const x =
+                                  chartData.length ===
+                                  1
+                                    ? width /
+                                      2
+                                    : paddingLeft +
+                                      (index /
+                                        (chartData.length -
+                                          1)) *
+                                        chartWidth;
+
+                                const y =
+                                  paddingTop +
+                                  chartHeight -
+                                  (item.at_no_piso /
+                                    chartMaxValue) *
+                                    chartHeight;
+
+                                return (
+                                  <circle
+                                    key={`${item.period}-${index}`}
+                                    cx={x}
+                                    cy={y}
+                                    r="9"
+                                    className="chart-hover-area"
+                                    onMouseEnter={() =>
+                                      setHoveredPoint(
+                                        {
+                                          index,
+                                          x,
+                                          y,
+                                        }
+                                      )
+                                    }
+                                    onMouseLeave={() =>
+                                      setHoveredPoint(
+                                        null
+                                      )
+                                    }
+                                  />
+                                );
+
+                              }
+                            )}
+
+                            {/* =================================
+                                TOOLTIP
+                            ================================= */}
+
+                            {hoveredPoint &&
+                              hoveredTooltip && (
+
+                              <g
+                                className="chart-tooltip"
+                                pointerEvents="none"
+                              >
+
+                                {/* Linha vertical */}
+
+                                <line
+                                  x1={
+                                    hoveredPoint.x
+                                  }
+                                  y1="40"
+                                  x2={
+                                    hoveredPoint.x
+                                  }
+                                  y2="350"
+                                  className="chart-tooltip-line"
+                                />
+
+                                {/* Ponto destacado */}
+
+                                <circle
+                                  cx={
+                                    hoveredPoint.x
+                                  }
+                                  cy={
+                                    hoveredPoint.y
+                                  }
+                                  r="5"
+                                  className="chart-tooltip-point"
+                                />
+
+                                {/* Caixa do tooltip */}
+
+                                <rect
+                                  x={Math.min(
+                                    hoveredPoint.x +
+                                      14,
+                                    795
+                                  )}
+                                  y={Math.max(
+                                    hoveredPoint.y -
+                                      96,
+                                    10
+                                  )}
+                                  width="185"
+                                  height="96"
+                                  rx="10"
+                                  className="chart-tooltip-box"
+                                />
+
+                                {/* Data */}
+
+                                <text
+                                  x={Math.min(
+                                    hoveredPoint.x +
+                                      26,
+                                    807
+                                  )}
+                                  y={Math.max(
+                                    hoveredPoint.y -
+                                      73,
+                                    33
+                                  )}
+                                  className="chart-tooltip-date"
+                                >
+                                  {formatDate(
+                                    hoveredTooltip
+                                      .item
+                                      .period
+                                  )}
+                                </text>
+
+                                {/* Nome do KPI */}
+
+                                <text
+                                  x={Math.min(
+                                    hoveredPoint.x +
+                                      26,
+                                    807
+                                  )}
+                                  y={Math.max(
+                                    hoveredPoint.y -
+                                      54,
+                                    52
+                                  )}
+                                  className="chart-tooltip-name"
+                                >
+                                  ATs no piso
+                                </text>
+
+                                {/* Valor */}
+
+                                <text
+                                  x={Math.min(
+                                    hoveredPoint.x +
+                                      26,
+                                    807
+                                  )}
+                                  y={Math.max(
+                                    hoveredPoint.y -
+                                      32,
+                                    74
+                                  )}
+                                  className="chart-tooltip-value"
+                                >
+                                  {hoveredTooltip.item.at_no_piso.toLocaleString(
+                                    "pt-BR"
+                                  )}{" "}
+                                  ATs
+                                </text>
+
+                                {/* Percentual */}
+
+                                <text
+                                  x={Math.min(
+                                    hoveredPoint.x +
+                                      26,
+                                    807
+                                  )}
+                                  y={Math.max(
+                                    hoveredPoint.y -
+                                      10,
+                                    96
+                                  )}
+                                  className="chart-tooltip-percent"
+                                >
+                                  {hoveredTooltip.percent.toLocaleString(
+                                    "pt-BR",
+                                    {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    }
+                                  )}
+                                  % no piso
+                                </text>
+
+                              </g>
+
+                            )}
+
+                            {/* =================================
+                                EIXO X
+                            ================================= */}
+
+                            {chartData.map(
+                              (
+                                item,
+                                index
+                              ) => {
+
+                                const isFirst =
+                                  index ===
+                                  0;
+
+                                const isLast =
+                                  index ===
+                                  chartData.length -
+                                    1;
+
+                                const showLabel =
+                                  chartData.length <=
+                                    10 ||
+                                  isFirst ||
+                                  isLast ||
+                                  index %
+                                    xLabelInterval ===
+                                    0;
+
+                                if (
+                                  !showLabel
+                                ) {
+                                  return null;
+                                }
+
+                                const width =
+                                  1000;
+
+                                const paddingLeft =
+                                  70;
+
+                                const paddingRight =
+                                  30;
+
+                                const chartWidth =
+                                  width -
+                                  paddingLeft -
+                                  paddingRight;
+
+                                const x =
+                                  chartData.length ===
+                                  1
+                                    ? width /
+                                      2
+                                    : paddingLeft +
+                                      (index /
+                                        (chartData.length -
+                                          1)) *
+                                        chartWidth;
+
+                                const label =
+                                  granularity ===
+                                  "monthly"
+                                    ? item.period
+                                    : formatDate(
+                                        item.period
+                                      );
+
+                                return (
+                                  <text
+                                    key={`x-${item.period}-${index}`}
+                                    x={x}
+                                    y="380"
+                                    textAnchor="middle"
+                                    className="chart-axis-label"
+                                  >
+                                    {
+                                      label
+                                    }
+                                  </text>
+                                );
+
+                              }
+                            )}
+
+                          </svg>
+
+                        </div>
+
+                      )}
+
+                    </section>
+
+                    {/* =========================================
+                        TABELA
+                    ========================================= */}
+
+                    <section className="bau-table-card">
+
+                      <div className="bau-card-header">
+
+                        <div>
+
+                          <h2>
+                            Detalhamento
+                          </h2>
+
+                          <p>
+                            Dados agregados
+                            utilizados no
+                            indicador.
+                          </p>
+
+                        </div>
+
+                        <div className="bau-table-count">
+
+                          {
+                            chartData.length
+                          }{" "}
+                          períodos
+
+                        </div>
+
+                      </div>
+
+                      <div className="bau-table-wrapper">
+
+                        <table className="bau-table">
+
+                          <thead>
+
+                            <tr>
+
+                              <th>
+                                Período
+                              </th>
+
+                              <th>
+                                ATs no piso
+                              </th>
+
+                              <th>
+                                ATs delivering
+                              </th>
+
+                            </tr>
+
+                          </thead>
+
+                          <tbody>
+
+                            {chartData.map(
+                              (
+                                row,
+                                index
+                              ) => (
+
+                                <tr
+                                  key={`${row.period}-${index}`}
+                                >
+
+                                  <td>
+                                    {
+                                      granularity ===
+                                      "monthly"
+                                        ? row.period
+                                        : formatDate(
+                                            row.period
+                                          )
+                                    }
+                                  </td>
+
+                                  <td>
+                                    {row.at_no_piso.toLocaleString(
+                                      "pt-BR"
+                                    )}
+                                  </td>
+
+                                  <td>
+                                    {row.qty_at_delivering.toLocaleString(
+                                      "pt-BR"
+                                    )}
+                                  </td>
+
+                                </tr>
+
+                              )
+                            )}
+
+                          </tbody>
+
+                        </table>
+
+                      </div>
+
+                    </section>
+
+                  </>
+
+                )}
 
             </div>
+
           </section>
 
         </main>
+
       </div>
+
     </div>
   );
 }

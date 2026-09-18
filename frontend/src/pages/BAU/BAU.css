@@ -1,60 +1,63 @@
-/* ============================================================
-   PÁGINA BAU
-   ============================================================ */
+/* =========================================================
+   BAU PAGE
+   KPI TEAM DASHBOARD
+   ========================================================= */
 
 .bau-page {
-  display: flex;
   min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(
+      circle at 75% 15%,
+      rgba(20, 53, 86, 0.18),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      #020914 0%,
+      #06111f 45%,
+      #020914 100%
+    );
 
-  background: #020914;
   color: #ffffff;
+  display: flex;
 }
 
 
-/* ============================================================
+/* =========================================================
    CONTEÚDO PRINCIPAL
-   ============================================================ */
-
-/*
- * O Sidebar é fixed, então precisamos reservar espaço
- * para ele no conteúdo.
- *
- * Expandido = 240px
- * Recolhido = 72px
- */
+   ========================================================= */
 
 .bau-content {
   flex: 1;
   min-width: 0;
-
-  margin-left: 240px;
-
-  transition:
-    margin-left 0.25s ease;
+  min-height: 100vh;
+  margin-left: 170px;
 }
 
 
-/*
- * Quando o Sidebar estiver recolhido,
- * o conteúdo acompanha automaticamente.
- */
-
-.bau-page:has(.sidebar.collapsed) .bau-content {
-  margin-left: 72px;
-}
-
+/* =========================================================
+   MAIN
+   ========================================================= */
 
 .bau-main {
-  padding: 28px 32px 40px;
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+
+  padding: 78px 24px 40px;
+
+  box-sizing: border-box;
 }
 
 
-/* ============================================================
+/* =========================================================
    HEADER
-   ============================================================ */
+   ========================================================= */
 
 .bau-header {
-  margin-bottom: 24px;
+  width: 100%;
+  margin-bottom: 18px;
 }
 
 .bau-title-wrapper {
@@ -71,136 +74,187 @@
   align-items: center;
   justify-content: center;
 
-  border-radius: 12px;
+  border-radius: 10px;
 
-  background: rgba(255, 95, 31, 0.12);
-  color: #ff5f1f;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 92, 42, 0.18),
+      rgba(255, 92, 42, 0.05)
+    );
+
+  border: 1px solid rgba(255, 92, 42, 0.25);
+
+  color: #ff5c2a;
 }
 
 .bau-header h1 {
   margin: 0;
 
-  font-size: 28px;
+  font-size: 25px;
   font-weight: 700;
+
+  letter-spacing: -0.4px;
 }
 
 .bau-header p {
   margin: 5px 0 0;
 
-  color: #8d9aaa;
+  color: #8697ac;
 
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 
-/* ============================================================
-   TÍTULOS DE SEÇÃO
-   ============================================================ */
+/* =========================================================
+   SECTION TITLE
+   ========================================================= */
 
 .bau-section-title {
   display: flex;
   align-items: center;
-
   gap: 8px;
 
-  margin-bottom: 16px;
+  color: #ff6a3d;
 
-  color: #ffffff;
-
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .bau-section-title svg {
-  color: #ff5f1f;
+  flex-shrink: 0;
 }
 
 
-/* ============================================================
+/* =========================================================
    FILTROS
-   ============================================================ */
+   ========================================================= */
 
 .bau-filters {
-  padding: 20px;
+  width: 100%;
 
-  margin-bottom: 24px;
+  padding: 16px;
 
-  background: #07111f;
+  box-sizing: border-box;
 
-  border: 1px solid #172536;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(8, 20, 35, 0.96),
+      rgba(5, 15, 28, 0.96)
+    );
 
-  border-radius: 14px;
+  border: 1px solid rgba(122, 148, 177, 0.16);
+
+  border-radius: 10px;
+
+  margin-bottom: 18px;
+
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
 .bau-filter-grid {
   display: grid;
 
   grid-template-columns:
-    repeat(5, minmax(140px, 1fr))
-    auto;
+    repeat(
+      auto-fit,
+      minmax(160px, 1fr)
+    );
 
   gap: 14px;
 
-  align-items: end;
+  margin-top: 12px;
 }
 
 .bau-filter {
   display: flex;
   flex-direction: column;
-
-  gap: 7px;
+  gap: 6px;
 }
 
 .bau-filter label {
-  color: #8d9aaa;
+  color: #93a2b8;
 
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
-.bau-filter select {
+.bau-filter input {
   width: 100%;
-  height: 40px;
+  height: 34px;
 
-  padding: 0 12px;
+  box-sizing: border-box;
 
-  border: 1px solid #26384d;
-  border-radius: 8px;
+  padding: 0 10px;
 
-  background: #020914;
-  color: #ffffff;
+  border-radius: 6px;
+
+  border: 1px solid rgba(125, 151, 180, 0.2);
+
+  background: #081524;
+
+  color: #e8edf4;
+
+  font-family: inherit;
+  font-size: 13px;
 
   outline: none;
 
-  cursor: pointer;
-
   transition:
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
-.bau-filter select:hover,
-.bau-filter select:focus {
-  border-color: #ff5f1f;
+.bau-filter input::placeholder {
+  color: #536174;
 }
+
+.bau-filter input:hover {
+  border-color: rgba(255, 92, 42, 0.28);
+}
+
+.bau-filter input:focus {
+  border-color: rgba(255, 92, 42, 0.65);
+
+  box-shadow:
+    0 0 0 2px rgba(255, 92, 42, 0.08);
+
+  background: #0a1828;
+}
+
+
+/* =========================================================
+   BOTÃO RESET
+   ========================================================= */
 
 .bau-reset-button {
-  height: 40px;
+  align-self: end;
+
+  height: 32px;
 
   display: flex;
   align-items: center;
   justify-content: center;
-
   gap: 7px;
 
   padding: 0 14px;
 
-  border: 1px solid #26384d;
-  border-radius: 8px;
+  border-radius: 6px;
+
+  border: 1px solid rgba(125, 151, 180, 0.2);
 
   background: transparent;
 
-  color: #b8c3d0;
+  color: #8c9bad;
 
+  font-family: inherit;
   font-size: 12px;
   font-weight: 500;
 
@@ -213,135 +267,170 @@
 }
 
 .bau-reset-button:hover {
-  border-color: #ff5f1f;
-
   color: #ffffff;
 
-  background: rgba(255, 95, 31, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+
+  border-color: rgba(255, 92, 42, 0.35);
+}
+
+.bau-reset-button svg {
+  color: #8c9bad;
 }
 
 
-/* ============================================================
+/* =========================================================
    GRID PRINCIPAL
-   ============================================================ */
+   ========================================================= */
 
 .bau-dashboard-grid {
   display: grid;
 
-  grid-template-columns:
-    240px
-    minmax(0, 1fr);
+  grid-template-columns: 180px minmax(0, 1fr);
 
-  gap: 20px;
+  gap: 14px;
 
   align-items: start;
 }
 
 
-/* ============================================================
+/* =========================================================
    PAINEL DE KPIs
-   ============================================================ */
+   ========================================================= */
 
 .bau-kpi-panel {
-  padding: 18px;
+  width: 100%;
 
-  background: #07111f;
+  box-sizing: border-box;
 
-  border: 1px solid #172536;
+  padding: 13px;
 
-  border-radius: 14px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(8, 21, 37, 0.98),
+      rgba(5, 15, 27, 0.98)
+    );
+
+  border: 1px solid rgba(122, 148, 177, 0.15);
+
+  border-radius: 10px;
 
   position: sticky;
-  top: 20px;
+  top: 78px;
 }
 
 .bau-kpi-help {
-  margin: -7px 0 15px;
+  margin: 7px 0 12px;
 
-  color: #69798c;
+  color: #7c8ba0;
 
-  font-size: 12px;
-
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.45;
 }
+
+
+/* =========================================================
+   LISTA DE KPIs
+   ========================================================= */
 
 .bau-kpi-list {
   display: flex;
-
   flex-direction: column;
 
-  gap: 8px;
+  gap: 7px;
 }
 
 .bau-kpi-item {
   width: 100%;
 
-  padding: 13px;
+  box-sizing: border-box;
+
+  padding: 10px;
+
+  text-align: left;
+
+  border-radius: 7px;
 
   border: 1px solid transparent;
 
-  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.015);
 
-  background: #0b1726;
-
-  color: #ffffff;
-
-  text-align: left;
+  color: #aab5c3;
 
   cursor: pointer;
 
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.15s ease;
 }
 
 .bau-kpi-item:hover {
-  background: #101e2e;
+  background: rgba(255, 255, 255, 0.035);
 
-  border-color: #26384d;
+  border-color: rgba(255, 255, 255, 0.08);
+
+  transform: translateY(-1px);
 }
 
 .bau-kpi-item.selected {
-  background: rgba(255, 95, 31, 0.1);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 92, 42, 0.15),
+      rgba(255, 92, 42, 0.05)
+    );
 
-  border-color: #ff5f1f;
+  border-color: rgba(255, 92, 42, 0.65);
+
+  color: #ffffff;
+
+  box-shadow:
+    inset 3px 0 0 #ff5c2a;
 }
 
 .bau-kpi-item-name {
   font-size: 13px;
 
   font-weight: 600;
+
+  color: inherit;
+
+  margin-bottom: 4px;
 }
 
 .bau-kpi-item-description {
-  margin-top: 5px;
-
-  color: #738398;
-
   font-size: 11px;
 
   line-height: 1.4;
+
+  color: #8494a9;
 }
 
 .bau-kpi-item.selected
-.bau-kpi-item-description {
-  color: #aeb9c7;
+  .bau-kpi-item-description {
+  color: #9aa7b7;
 }
 
 
-/* ============================================================
+/* =========================================================
    RESULTADOS
-   ============================================================ */
+   ========================================================= */
 
 .bau-results {
   min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 14px;
 }
 
 
-/* ============================================================
-   CARDS DE RESUMO
-   ============================================================ */
+/* =========================================================
+   SUMMARY
+   ========================================================= */
 
 .bau-summary-grid {
   display: grid;
@@ -349,165 +438,470 @@
   grid-template-columns:
     repeat(
       auto-fit,
-      minmax(190px, 1fr)
+      minmax(180px, 1fr)
     );
 
   gap: 14px;
-
-  margin-bottom: 20px;
 }
 
 .bau-summary-card {
-  padding: 18px;
+  min-height: 82px;
 
-  background: #07111f;
+  box-sizing: border-box;
 
-  border: 1px solid #172536;
+  padding: 15px;
 
-  border-radius: 14px;
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(8, 20, 35, 0.98),
+      rgba(5, 15, 28, 0.98)
+    );
+
+  border: 1px solid rgba(122, 148, 177, 0.15);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .bau-summary-label {
-  color: #8d9aaa;
+  color: #8899ae;
 
-  font-size: 12px;
-
+  font-size: 11px;
   font-weight: 500;
+
+  margin-bottom: 5px;
 }
 
 .bau-summary-value {
-  margin-top: 8px;
-
   color: #ffffff;
 
-  font-size: 28px;
+  font-size: 32px;
 
-  font-weight: 700;
+  font-weight: 800;
 
   letter-spacing: -0.5px;
+
+  font-variant-numeric: tabular-nums;
 }
 
 .bau-summary-unit {
-  margin-top: 4px;
+  margin-top: 3px;
 
-  color: #69798c;
+  color: #7c8ba0;
 
   font-size: 11px;
 }
 
 
-/* ============================================================
+/* =========================================================
    CARDS
-   ============================================================ */
+   ========================================================= */
 
 .bau-chart-card,
 .bau-table-card {
-  margin-bottom: 20px;
+  width: 100%;
 
-  background: #07111f;
+  box-sizing: border-box;
 
-  border: 1px solid #172536;
+  border-radius: 10px;
 
-  border-radius: 14px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(7, 19, 33, 0.98),
+      rgba(4, 13, 24, 0.98)
+    );
+
+  border: 1px solid rgba(122, 148, 177, 0.15);
 
   overflow: hidden;
+
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
+
+/* =========================================================
+   CARD HEADER
+   ========================================================= */
+
 .bau-card-header {
+  min-height: 58px;
+
+  padding: 13px 15px;
+
+  box-sizing: border-box;
+
   display: flex;
 
   align-items: center;
+
   justify-content: space-between;
 
-  padding: 18px 20px;
+  gap: 15px;
 
-  border-bottom: 1px solid #172536;
+  border-bottom: 1px solid rgba(122, 148, 177, 0.1);
 }
 
 .bau-card-header h2 {
   margin: 0;
 
-  font-size: 15px;
+  color: #ffffff;
 
-  font-weight: 600;
+  font-size: 17px;
+
+  font-weight: 700;
+
+  letter-spacing: -0.2px;
 }
 
 .bau-card-header p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
 
-  color: #69798c;
+  color: #7c8ba0;
 
   font-size: 12px;
+
+  line-height: 1.4;
 }
 
 .bau-chart-icon {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
+
+  flex-shrink: 0;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
-  border-radius: 9px;
+  border-radius: 7px;
 
-  background: rgba(255, 95, 31, 0.1);
+  color: #ff5c2a;
 
-  color: #ff5f1f;
+  background: rgba(255, 92, 42, 0.08);
+
+  border: 1px solid rgba(255, 92, 42, 0.18);
 }
 
 
-/* ============================================================
-   PLACEHOLDER DO GRÁFICO
-   ============================================================ */
+/* =========================================================
+   CONTROLES DO GRÁFICO
+   ========================================================= */
+
+.bau-chart-controls {
+  display: flex;
+
+  gap: 3px;
+
+  width: fit-content;
+
+  margin: 12px 15px 0;
+
+  padding: 3px;
+
+  border-radius: 7px;
+
+  background: rgba(255, 255, 255, 0.025);
+
+  border: 1px solid rgba(122, 148, 177, 0.1);
+}
+
+.bau-chart-controls button {
+  border: 1px solid transparent;
+
+  background: transparent;
+
+  color: #748397;
+
+  padding: 6px 12px;
+
+  border-radius: 5px;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.bau-chart-controls button:hover {
+  color: #ffffff;
+
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bau-chart-controls button.active {
+  color: #ffffff;
+
+  background: rgba(255, 92, 42, 0.14);
+
+  border-color: rgba(255, 92, 42, 0.4);
+}
+
+
+/* =========================================================
+   GRÁFICO DE LINHA
+   ========================================================= */
+
+.bau-line-chart {
+  width: 100%;
+
+  height: 400px;
+
+  position: relative;
+
+  padding: 10px 0 0;
+
+  box-sizing: border-box;
+}
+
+.bau-line-chart-svg {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  overflow: visible;
+}
+
+
+/* =========================================================
+   GRID DO GRÁFICO
+   ========================================================= */
+
+.chart-grid-line {
+  stroke: rgba(255, 255, 255, 0.055);
+
+  stroke-width: 1;
+}
+
+.chart-axis-line {
+  stroke: rgba(255, 255, 255, 0.12);
+
+  stroke-width: 1;
+}
+
+
+/* =========================================================
+   LINHA PRINCIPAL
+   ========================================================= */
+
+.bau-chart-line {
+  stroke: #ff5c2a;
+
+  stroke-width: 3;
+
+  stroke-linecap: round;
+
+  stroke-linejoin: round;
+
+  filter:
+    drop-shadow(
+      0 0 4px rgba(255, 92, 42, 0.25)
+    );
+}
+
+
+/* =========================================================
+   EIXOS
+   ========================================================= */
+
+.chart-axis-label {
+  fill: #8494a9;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  font-family: "Inter", Arial, sans-serif;
+}
+
+
+/* =========================================================
+   HOVER
+   ========================================================= */
+
+.chart-hover-area {
+  fill: transparent;
+
+  stroke: transparent;
+
+  cursor: crosshair;
+}
+
+.chart-hover-area:hover {
+  fill: rgba(255, 92, 42, 0.15);
+}
+
+
+/* =========================================================
+   TOOLTIP
+   ========================================================= */
+
+/* =========================================================
+   TOOLTIP DO GRÁFICO
+   ========================================================= */
+
+    .chart-tooltip-box {
+      fill: #0c1a2c;
+
+      stroke: rgba(255, 122, 74, 0.55);
+
+      stroke-width: 1.2;
+
+      filter:
+        drop-shadow(
+          0 10px 24px rgba(0, 0, 0, 0.5)
+        );
+    }
+
+
+    /* Linha vertical que acompanha o ponto */
+
+    .chart-tooltip-line {
+      stroke: rgba(255, 255, 255, 0.22);
+
+      stroke-width: 1;
+
+      stroke-dasharray: 4 4;
+    }
+
+
+    /* Ponto destacado */
+
+    .chart-tooltip-point {
+      fill: #ff5c2a;
+
+      stroke: #ffffff;
+
+      stroke-width: 2;
+
+      filter:
+        drop-shadow(
+          0 0 5px rgba(255, 92, 42, 0.45)
+        );
+    }
+
+
+    /* Data */
+
+    .chart-tooltip-date {
+      fill: #9aa8bc;
+
+      font-size: 11px;
+
+      font-family: "Inter", Arial, sans-serif;
+
+      font-weight: 500;
+    }
+
+
+    /* Nome do KPI */
+
+    .chart-tooltip-name {
+      fill: #d6dde7;
+
+      font-size: 12px;
+
+      font-family: "Inter", Arial, sans-serif;
+
+      font-weight: 600;
+    }
+
+
+    /* Valor */
+
+    .chart-tooltip-value {
+      fill: #ffffff;
+
+      font-size: 16px;
+
+      font-family: "Inter", Arial, sans-serif;
+
+      font-weight: 700;
+
+      letter-spacing: 0.1px;
+    }
+
+
+    /* Percentual */
+
+    .chart-tooltip-percent {
+      fill: #ff8a5c;
+
+      font-size: 12px;
+
+      font-family: "Inter", Arial, sans-serif;
+
+      font-weight: 600;
+
+      letter-spacing: 0.1px;
+    }
+/* =========================================================
+   PLACEHOLDER
+   ========================================================= */
 
 .bau-chart-placeholder {
-  min-height: 320px;
+  min-height: 250px;
 
   display: flex;
 
   flex-direction: column;
 
   align-items: center;
+
   justify-content: center;
 
-  gap: 8px;
+  gap: 7px;
 
-  color: #526276;
-}
-
-.bau-chart-placeholder svg {
-  color: #ff5f1f;
-
-  opacity: 0.7;
-
-  margin-bottom: 5px;
+  color: #748397;
 }
 
 .bau-chart-placeholder strong {
-  color: #aeb9c7;
+  color: #d8dee7;
 
   font-size: 14px;
 }
 
 .bau-chart-placeholder span {
-  color: #69798c;
+  color: #7c8ba0;
 
   font-size: 12px;
 }
 
 
-/* ============================================================
+/* =========================================================
    TABELA
-   ============================================================ */
+   ========================================================= */
+
+.bau-table-card {
+  overflow: hidden;
+}
 
 .bau-table-count {
+  flex-shrink: 0;
+
   padding: 5px 9px;
 
-  border-radius: 6px;
+  border-radius: 5px;
 
-  background: #0b1726;
+  background: rgba(255, 255, 255, 0.025);
 
-  color: #8d9aaa;
+  border: 1px solid rgba(122, 148, 177, 0.1);
+
+  color: #8494a9;
 
   font-size: 11px;
 }
@@ -515,7 +909,9 @@
 .bau-table-wrapper {
   width: 100%;
 
-  overflow-x: auto;
+  max-height: 420px;
+
+  overflow: auto;
 }
 
 .bau-table {
@@ -523,34 +919,43 @@
 
   border-collapse: collapse;
 
-  white-space: nowrap;
-}
-
-.bau-table th,
-.bau-table td {
-  padding: 12px 14px;
-
-  border-bottom: 1px solid #172536;
-
-  text-align: left;
-
   font-size: 12px;
 }
 
-.bau-table th {
-  background: #091523;
+.bau-table thead {
+  position: sticky;
 
-  color: #8d9aaa;
+  top: 0;
+
+  z-index: 2;
+
+  background: #071322;
+}
+
+.bau-table th {
+  padding: 10px;
+
+  text-align: left;
+
+  color: #93a2b8;
 
   font-size: 11px;
 
   font-weight: 600;
 
   text-transform: uppercase;
+
+  letter-spacing: 0.3px;
+
+  border-bottom: 1px solid rgba(122, 148, 177, 0.12);
 }
 
 .bau-table td {
-  color: #c7d0dc;
+  padding: 10px;
+
+  color: #c3ccd8;
+
+  border-bottom: 1px solid rgba(122, 148, 177, 0.07);
 }
 
 .bau-table tbody tr {
@@ -559,7 +964,7 @@
 }
 
 .bau-table tbody tr:hover {
-  background: #0b1726;
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .bau-table tbody tr:last-child td {
@@ -567,33 +972,56 @@
 }
 
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
 
-@media (max-width: 1200px) {
-  .bau-filter-grid {
-    grid-template-columns:
-      repeat(3, 1fr);
-  }
+.bau-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  .bau-reset-button {
-    width: 100%;
-  }
+.bau-table-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.bau-table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+
+  border-radius: 10px;
+}
+
+.bau-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 92, 42, 0.4);
 }
 
 
-@media (max-width: 900px) {
-  .bau-content {
-    margin-left: 72px;
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+  .bau-filter-grid {
+    grid-template-columns:
+      repeat(2, minmax(180px, 1fr));
   }
 
-  .bau-page:has(.sidebar.collapsed) .bau-content {
-    margin-left: 72px;
+  .bau-reset-button {
+    align-self: stretch;
+  }
+
+}
+
+
+@media (max-width: 850px) {
+
+  .bau-content {
+    margin-left: 0;
   }
 
   .bau-main {
-    padding: 22px;
+    padding: 70px 15px 30px;
   }
 
   .bau-dashboard-grid {
@@ -601,32 +1029,49 @@
   }
 
   .bau-kpi-panel {
-    position: static;
+    position: relative;
+
+    top: auto;
   }
 
   .bau-kpi-list {
     display: grid;
 
     grid-template-columns:
-      repeat(2, 1fr);
+      repeat(
+        auto-fit,
+        minmax(150px, 1fr)
+      );
   }
+
 }
 
 
-@media (max-width: 650px) {
+@media (max-width: 600px) {
+
   .bau-main {
-    padding: 16px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
   .bau-filter-grid {
     grid-template-columns: 1fr;
   }
 
-  .bau-kpi-list {
+  .bau-summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .bau-header h1 {
-    font-size: 24px;
+  .bau-card-header {
+    align-items: flex-start;
   }
+
+  .bau-chart-controls {
+    margin-bottom: 5px;
+  }
+
+  .bau-line-chart {
+    height: 300px;
+  }
+
 }
