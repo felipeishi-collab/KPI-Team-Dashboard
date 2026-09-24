@@ -18,9 +18,11 @@ const sheets = google.sheets({
 });
 
 export async function getSheetData(
-  range: string
+  range: string,
+  spreadsheetIdOverride?: string
 ): Promise<string[][]> {
   const spreadsheetId =
+    spreadsheetIdOverride ||
     process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
 
   if (!spreadsheetId) {

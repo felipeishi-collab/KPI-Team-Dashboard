@@ -4,6 +4,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import kpiRoutes from "./routes/kpi.routes";
 import updatesRoutes from "./routes/updates.routes";
+import driversRoutes from "./routes/drivers.routes";
 
 const app = express();
 
@@ -25,5 +26,6 @@ app.get("/", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/updates", updatesRoutes);
+app.use("/api/drivers", driversRoutes);
 
 export default app;
