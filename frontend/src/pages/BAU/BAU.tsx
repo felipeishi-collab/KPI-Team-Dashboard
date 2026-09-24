@@ -2,15 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   Filter,
+  Percent,
   RotateCcw,
   TrendingUp,
+  Users,
 } from "lucide-react";
 
 import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
 
+import { useContainerWidth } from "../../hooks/useContainerWidth";
+
 import { bauKpis } from "./bauKpis";
+
+import DriversBarChart from "./DriversBarChart";
+import type { BarChartDatum } from "./DriversBarChart";
 
 import "./BAU.css";
 
@@ -21,6 +30,15 @@ interface User {
 
 interface PeriodData {
   period: string;
+  qty_at_delivering: number;
+  at_no_piso: number;
+}
+
+interface AtNoPisoStationPeriod {
+  period: string;
+  station_id: number;
+  station_code: string;
+  station_name: string;
   qty_at_delivering: number;
   at_no_piso: number;
 }
@@ -36,6 +54,41 @@ interface ApiResponse {
     daily: PeriodData[];
     weekly: PeriodData[];
     monthly: PeriodData[];
+
+    dailyByStation: AtNoPisoStationPeriod[];
+    weeklyByStation: AtNoPisoStationPeriod[];
+    monthlyByStation: AtNoPisoStationPeriod[];
+  };
+}
+
+interface DriversPeriod {
+  period: string;
+  percent_ocupacao: number;
+  drivers_confirmados: number;
+  percent_rejeite_ativo: number;
+  rejeite_ativo_absoluto: number;
+}
+
+interface DriversStationPeriod {
+  period: string;
+  station_id: number;
+  station_code: string;
+  station_name: string;
+  percent_ocupacao: number;
+  drivers_confirmados: number;
+  percent_rejeite_ativo: number;
+  rejeite_ativo_absoluto: number;
+}
+
+interface DriversApiResponse {
+  data: {
+    daily: DriversPeriod[];
+    weekly: DriversPeriod[];
+    monthly: DriversPeriod[];
+
+    dailyByStation: DriversStationPeriod[];
+    weeklyByStation: DriversStationPeriod[];
+    monthlyByStation: DriversStationPeriod[];
   };
 }
 
@@ -49,6 +102,10 @@ type Granularity =
   | "daily"
   | "weekly"
   | "monthly";
+
+// quantidade de linhas da tabela "Detalhamento" exibidas
+// por página (ver PAGINAÇÃO DA TABELA, dentro do componente)
+const TABLE_PAGE_SIZE = 50;
 
 function BAU() {
   // ============================================================
@@ -83,6 +140,11 @@ function BAU() {
 
   const [endDate, setEndDate] =
     useState("");
+
+  // incrementado a cada "Limpar filtros", usado como key
+  // dos inputs de data pra forçar o navegador a limpá-los
+  const [filterResetKey, setFilterResetKey] =
+    useState(0);
 
   // ============================================================
   // LISTA DE ESTAÇÕES (AUTOCOMPLETE)
@@ -173,6 +235,22 @@ function BAU() {
     useState<Granularity>("daily");
 
   // ============================================================
+  // TAMANHO REAL DO GRÁFICO DE LINHA
+  // (o viewBox do SVG precisa bater com o tamanho renderizado
+  // de verdade, senão os textos dos eixos ficam esticados —
+  // ver useContainerWidth)
+  // ============================================================
+
+  const [
+    lineChartContainerRef,
+    lineChartWidth,
+    lineChartHeight,
+  ] = useContainerWidth<HTMLDivElement>(
+    1000,
+    400
+  );
+
+  // ============================================================
   // DADOS
   // ============================================================
 
@@ -185,6 +263,21 @@ function BAU() {
     useState(true);
 
   const [error, setError] =
+    useState("");
+
+  // ============================================================
+  // DADOS — DRIVERS (OCUPAÇÃO / REJEITE ATIVO)
+  // ============================================================
+
+  const [driversData, setDriversData] =
+    useState<DriversApiResponse["data"] | null>(
+      null
+    );
+
+  const [driversLoading, setDriversLoading] =
+    useState(true);
+
+  const [driversError, setDriversError] =
     useState("");
 
   // ============================================================
@@ -292,6 +385,99 @@ function BAU() {
   ]);
 
   // ============================================================
+  // BUSCAR DADOS DE DRIVERS (OCUPAÇÃO / REJEITE ATIVO)
+  // ============================================================
+
+  useEffect(() => {
+    async function fetchDriversData() {
+      try {
+        setDriversLoading(true);
+        setDriversError("");
+
+        const params =
+          new URLSearchParams();
+
+        if (startDate) {
+          params.append(
+            "startDate",
+            startDate
+          );
+        }
+
+        if (endDate) {
+          params.append(
+            "endDate",
+            endDate
+          );
+        }
+
+        if (stationCode) {
+          params.append(
+            "station",
+            stationCode
+          );
+        }
+
+        if (stationId) {
+          params.append(
+            "stationId",
+            stationId
+          );
+        }
+
+        if (stationName) {
+          params.append(
+            "stationName",
+            stationName
+          );
+        }
+
+        const queryString =
+          params.toString();
+
+        const url = queryString
+          ? `http://localhost:3001/api/drivers?${queryString}`
+          : "http://localhost:3001/api/drivers";
+
+        const response =
+          await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(
+            `Erro HTTP ${response.status}`
+          );
+        }
+
+        const result: DriversApiResponse =
+          await response.json();
+
+        setDriversData(result.data);
+      } catch (err) {
+        console.error(
+          "Erro ao buscar dados de drivers:",
+          err
+        );
+
+        setDriversError(
+          "Não foi possível carregar os dados de drivers."
+        );
+
+        setDriversData(null);
+      } finally {
+        setDriversLoading(false);
+      }
+    }
+
+    fetchDriversData();
+  }, [
+    startDate,
+    endDate,
+    stationCode,
+    stationId,
+    stationName,
+  ]);
+
+  // ============================================================
   // RESET DOS FILTROS
   // ============================================================
 
@@ -301,6 +487,11 @@ function BAU() {
     setStationName("");
     setStartDate("");
     setEndDate("");
+
+    // força o React a recriar os inputs de data —
+    // alguns navegadores não limpam visualmente um
+    // <input type="date"> só por mudar o value via JS
+    setFilterResetKey((key) => key + 1);
   };
 
   // ============================================================
@@ -317,6 +508,155 @@ function BAU() {
     apiData,
     granularity,
   ]);
+
+  // ============================================================
+  // DADOS DO GRÁFICO DE DRIVERS (mesma granularidade do gráfico
+  // de ATs no piso, acima)
+  // ============================================================
+
+  const driversChartData = useMemo(() => {
+    if (!driversData) {
+      return [];
+    }
+
+    return driversData[granularity] || [];
+  }, [
+    driversData,
+    granularity,
+  ]);
+
+  // ============================================================
+  // DADOS DA TABELA "DETALHAMENTO" — UMA LINHA POR ESTAÇÃO
+  // POR PERÍODO (os gráficos acima continuam usando os totais
+  // somados de apiData/driversData, sem alteração)
+  // ============================================================
+
+  const atNoPisoByStationData = useMemo(() => {
+    if (!apiData) {
+      return [];
+    }
+
+    const byGranularity = {
+      daily: apiData.dailyByStation,
+      weekly: apiData.weeklyByStation,
+      monthly: apiData.monthlyByStation,
+    };
+
+    return byGranularity[granularity] || [];
+  }, [apiData, granularity]);
+
+  const driversByStationData = useMemo(() => {
+    if (!driversData) {
+      return [];
+    }
+
+    const byGranularity = {
+      daily: driversData.dailyByStation,
+      weekly: driversData.weeklyByStation,
+      monthly: driversData.monthlyByStation,
+    };
+
+    return byGranularity[granularity] || [];
+  }, [driversData, granularity]);
+
+  // mapa "período|station_code" -> dados de drivers, para
+  // juntar na tabela (sem risco de escala, já que cada
+  // métrica fica na sua própria coluna)
+  const driversByStationMap = useMemo(
+    () =>
+      new Map(
+        driversByStationData.map((item) => [
+          `${item.period}|${item.station_code}`,
+          item,
+        ])
+      ),
+    [driversByStationData]
+  );
+
+  // ============================================================
+  // PAGINAÇÃO DA TABELA "DETALHAMENTO"
+  // (a tabela é uma linha por estação por período, então sem
+  // paginação ela podia chegar a dezenas de milhares de <tr>
+  // de uma vez, o que travava a aba/o Chrome)
+  // ============================================================
+
+  const [tablePage, setTablePage] = useState(0);
+
+  const tableTotalPages = Math.max(
+    1,
+    Math.ceil(
+      atNoPisoByStationData.length /
+        TABLE_PAGE_SIZE
+    )
+  );
+
+  // sempre que o conjunto de linhas mudar (filtro,
+  // granularidade, etc.), volta pra primeira página, senão
+  // dá pra "encalhar" numa página vazia
+  useEffect(() => {
+    setTablePage(0);
+  }, [atNoPisoByStationData]);
+
+  const pagedStationData = useMemo(() => {
+    const start = tablePage * TABLE_PAGE_SIZE;
+
+    return atNoPisoByStationData.slice(
+      start,
+      start + TABLE_PAGE_SIZE
+    );
+  }, [atNoPisoByStationData, tablePage]);
+
+  const formatPeriodLabel = (period: string) =>
+    granularity === "monthly"
+      ? period
+      : formatDate(period);
+
+  const formatPercent = (value: number) =>
+    `${value.toLocaleString("pt-BR", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}%`;
+
+  const formatK = (value: number) =>
+    Math.abs(value) >= 1000
+      ? `${(value / 1000).toLocaleString(
+          "pt-BR",
+          {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          }
+        )}k`
+      : value.toLocaleString("pt-BR");
+
+  const occupancyChartData: BarChartDatum[] =
+    useMemo(
+      () =>
+        driversChartData.map((item) => ({
+          period: item.period,
+          values: {
+            percent_ocupacao:
+              item.percent_ocupacao,
+            percent_rejeite_ativo:
+              item.percent_rejeite_ativo,
+          },
+        })),
+      [driversChartData]
+    );
+
+  const countChartData: BarChartDatum[] =
+    useMemo(
+      () =>
+        driversChartData.map((item) => ({
+          period: item.period,
+          values: {
+            drivers_confirmados:
+              item.drivers_confirmados,
+            rejeite_ativo_absoluto:
+              item.rejeite_ativo_absoluto,
+          },
+        })),
+      [driversChartData]
+    );
 
   // ============================================================
   // SELEÇÃO DE KPI
@@ -441,8 +781,8 @@ function BAU() {
       return "";
     }
 
-    const width = 1000;
-    const height = 400;
+    const width = lineChartWidth;
+    const height = lineChartHeight;
 
     const paddingLeft = 70;
     const paddingRight = 30;
@@ -489,6 +829,8 @@ function BAU() {
   }, [
     chartData,
     chartMaxValue,
+    lineChartWidth,
+    lineChartHeight,
   ]);
 
   // ============================================================
@@ -534,6 +876,48 @@ function BAU() {
     hoveredPoint,
     chartData,
   ]);
+
+  // ============================================================
+  // SÉRIES DOS GRÁFICOS DE DRIVERS
+  // ============================================================
+
+  const formatAxisPercent = (value: number) =>
+    `${Math.round(value)}%`;
+
+  const occupancySeries = [
+    {
+      key: "percent_ocupacao",
+      label: "% Ocupação",
+      color: "#199e70",
+      formatValue: formatPercent,
+      formatAxis: formatAxisPercent,
+    },
+    {
+      key: "percent_rejeite_ativo",
+      label: "% Rejeite Ativo",
+      color: "#d95926",
+      formatValue: formatPercent,
+      formatAxis: formatAxisPercent,
+    },
+  ];
+
+  const countSeries = [
+    {
+      key: "drivers_confirmados",
+      label: "Confirmação em D-1",
+      color: "#3987e5",
+      formatValue: (value: number) =>
+        value.toLocaleString("pt-BR"),
+      formatAxis: formatK,
+    },
+    {
+      key: "rejeite_ativo_absoluto",
+      label: "Rejeite Ativo (abs.)",
+      color: "#d95926",
+      formatValue: formatK,
+      formatAxis: formatK,
+    },
+  ];
 
   // ============================================================
   // RENDER
@@ -730,6 +1114,77 @@ function BAU() {
 
               </div>
 
+              {/* PERÍODO (GRANULARIDADE) */}
+
+              <div className="bau-filter">
+
+                <label>
+                  Período
+                </label>
+
+                <div className="bau-chart-controls">
+
+                  <button
+                    className={
+                      granularity ===
+                      "daily"
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() => {
+                      setGranularity(
+                        "daily"
+                      );
+                      setHoveredPoint(
+                        null
+                      );
+                    }}
+                  >
+                    Diário
+                  </button>
+
+                  <button
+                    className={
+                      granularity ===
+                      "weekly"
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() => {
+                      setGranularity(
+                        "weekly"
+                      );
+                      setHoveredPoint(
+                        null
+                      );
+                    }}
+                  >
+                    Semanal
+                  </button>
+
+                  <button
+                    className={
+                      granularity ===
+                      "monthly"
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() => {
+                      setGranularity(
+                        "monthly"
+                      );
+                      setHoveredPoint(
+                        null
+                      );
+                    }}
+                  >
+                    Mensal
+                  </button>
+
+                </div>
+
+              </div>
+
               {/* DATA INICIAL */}
 
               <div className="bau-filter">
@@ -739,6 +1194,7 @@ function BAU() {
                 </label>
 
                 <input
+                  key={`start-date-${filterResetKey}`}
                   type="date"
                   value={
                     startDate
@@ -764,6 +1220,7 @@ function BAU() {
                 </label>
 
                 <input
+                  key={`end-date-${filterResetKey}`}
                   type="date"
                   value={
                     endDate
@@ -1076,71 +1533,6 @@ function BAU() {
                       </div>
 
                       {/* =======================================
-                          CONTROLES
-                      ======================================= */}
-
-                      <div className="bau-chart-controls">
-
-                        <button
-                          className={
-                            granularity ===
-                            "daily"
-                              ? "active"
-                              : ""
-                          }
-                          onClick={() => {
-                            setGranularity(
-                              "daily"
-                            );
-                            setHoveredPoint(
-                              null
-                            );
-                          }}
-                        >
-                          Diário
-                        </button>
-
-                        <button
-                          className={
-                            granularity ===
-                            "weekly"
-                              ? "active"
-                              : ""
-                          }
-                          onClick={() => {
-                            setGranularity(
-                              "weekly"
-                            );
-                            setHoveredPoint(
-                              null
-                            );
-                          }}
-                        >
-                          Semanal
-                        </button>
-
-                        <button
-                          className={
-                            granularity ===
-                            "monthly"
-                              ? "active"
-                              : ""
-                          }
-                          onClick={() => {
-                            setGranularity(
-                              "monthly"
-                            );
-                            setHoveredPoint(
-                              null
-                            );
-                          }}
-                        >
-                          Mensal
-                        </button>
-
-                      </div>
-
-                      {/* =======================================
                           GRÁFICO
                       ======================================= */}
 
@@ -1163,123 +1555,98 @@ function BAU() {
 
                       ) : (
 
-                        <div className="bau-line-chart">
+                        <div
+                          className="bau-line-chart"
+                          ref={
+                            lineChartContainerRef
+                          }
+                        >
 
                           <svg
-                            viewBox="0 0 1000 400"
+                            viewBox={`0 0 ${lineChartWidth} ${lineChartHeight}`}
                             className="bau-line-chart-svg"
                             preserveAspectRatio="none"
                           >
 
                             {/* =================================
-                                GRID
+                                GRID + EIXO Y
+                                (posições calculadas a partir do
+                                tamanho real do gráfico — não mais
+                                fixas em "1000x400", senão a grade
+                                e as labels não acompanham o
+                                viewBox dinâmico)
                             ================================= */}
 
-                            <line
-                              x1="70"
-                              y1="40"
-                              x2="970"
-                              y2="40"
-                              className="chart-grid-line"
-                            />
+                            {[
+                              0,
+                              0.25,
+                              0.5,
+                              0.75,
+                              1,
+                            ].map((tick) => {
+                              const chartHeight =
+                                lineChartHeight -
+                                40 -
+                                50;
 
-                            <line
-                              x1="70"
-                              y1="117.5"
-                              x2="970"
-                              y2="117.5"
-                              className="chart-grid-line"
-                            />
+                              const y =
+                                40 +
+                                chartHeight *
+                                  (1 - tick);
 
-                            <line
-                              x1="70"
-                              y1="195"
-                              x2="970"
-                              y2="195"
-                              className="chart-grid-line"
-                            />
+                              return (
+                                <line
+                                  key={`grid-${tick}`}
+                                  x1={70}
+                                  y1={y}
+                                  x2={
+                                    lineChartWidth -
+                                    30
+                                  }
+                                  y2={y}
+                                  className={
+                                    tick === 0
+                                      ? "chart-axis-line"
+                                      : "chart-grid-line"
+                                  }
+                                />
+                              );
+                            })}
 
-                            <line
-                              x1="70"
-                              y1="272.5"
-                              x2="970"
-                              y2="272.5"
-                              className="chart-grid-line"
-                            />
+                            {[
+                              0,
+                              0.25,
+                              0.5,
+                              0.75,
+                              1,
+                            ].map((tick) => {
+                              const chartHeight =
+                                lineChartHeight -
+                                40 -
+                                50;
 
-                            <line
-                              x1="70"
-                              y1="350"
-                              x2="970"
-                              y2="350"
-                              className="chart-axis-line"
-                            />
+                              const y =
+                                40 +
+                                chartHeight *
+                                  (1 - tick);
 
-                            {/* =================================
-                                EIXO Y
-                            ================================= */}
-
-                            <text
-                              x="58"
-                              y="355"
-                              textAnchor="end"
-                              className="chart-axis-label"
-                            >
-                              0
-                            </text>
-
-                            <text
-                              x="58"
-                              y="277"
-                              textAnchor="end"
-                              className="chart-axis-label"
-                            >
-                              {Math.round(
-                                chartMaxValue *
-                                  0.25
-                              ).toLocaleString(
-                                "pt-BR"
-                              )}
-                            </text>
-
-                            <text
-                              x="58"
-                              y="200"
-                              textAnchor="end"
-                              className="chart-axis-label"
-                            >
-                              {Math.round(
-                                chartMaxValue *
-                                  0.5
-                              ).toLocaleString(
-                                "pt-BR"
-                              )}
-                            </text>
-
-                            <text
-                              x="58"
-                              y="122"
-                              textAnchor="end"
-                              className="chart-axis-label"
-                            >
-                              {Math.round(
-                                chartMaxValue *
-                                  0.75
-                              ).toLocaleString(
-                                "pt-BR"
-                              )}
-                            </text>
-
-                            <text
-                              x="58"
-                              y="45"
-                              textAnchor="end"
-                              className="chart-axis-label"
-                            >
-                              {chartMaxValue.toLocaleString(
-                                "pt-BR"
-                              )}
-                            </text>
+                              return (
+                                <text
+                                  key={`y-${tick}`}
+                                  x={58}
+                                  y={y + 4}
+                                  textAnchor="end"
+                                  className="chart-axis-label"
+                                >
+                                  {Math.round(
+                                    chartMaxValue *
+                                      tick
+                                  ).toLocaleString(
+                                    "pt-BR"
+                                  )}
+                                </text>
+                              );
+                            })}
 
                             {/* =================================
                                 LINHA PRINCIPAL
@@ -1304,10 +1671,10 @@ function BAU() {
                               ) => {
 
                                 const width =
-                                  1000;
+                                  lineChartWidth;
 
                                 const height =
-                                  400;
+                                  lineChartHeight;
 
                                 const paddingLeft =
                                   70;
@@ -1559,7 +1926,7 @@ function BAU() {
                                 }
 
                                 const width =
-                                  1000;
+                                  lineChartWidth;
 
                                 const paddingLeft =
                                   70;
@@ -1617,6 +1984,82 @@ function BAU() {
                     </section>
 
                     {/* =========================================
+                        DRIVERS — OCUPAÇÃO E REJEITE ATIVO
+                    ========================================= */}
+
+                    {driversLoading && (
+                      <section className="bau-chart-card">
+                        <div className="bau-chart-placeholder">
+                          <strong>
+                            Carregando dados...
+                          </strong>
+                          <span>
+                            Buscando informações
+                            de drivers.
+                          </span>
+                        </div>
+                      </section>
+                    )}
+
+                    {!driversLoading &&
+                      driversError && (
+                        <section className="bau-chart-card">
+                          <div className="bau-chart-placeholder">
+                            <strong>
+                              Erro ao carregar
+                              dados
+                            </strong>
+                            <span>
+                              {driversError}
+                            </span>
+                          </div>
+                        </section>
+                      )}
+
+                    {!driversLoading &&
+                      !driversError && (
+                        <>
+                          <DriversBarChart
+                            title="Ocupação e Rejeite Ativo (%)"
+                            description="% de ocupação (drivers ativos / confirmados + não confirmados) e % de rejeite ativo (rejeites, exceto timeout, / call ups declinados)."
+                            icon={
+                              <Percent
+                                size={20}
+                              />
+                            }
+                            data={
+                              occupancyChartData
+                            }
+                            series={
+                              occupancySeries
+                            }
+                            formatPeriodLabel={
+                              formatPeriodLabel
+                            }
+                          />
+
+                          <DriversBarChart
+                            title="Confirmação D-1 e Rejeite Ativo (absoluto)"
+                            description="Drivers confirmados no D-1 e volume absoluto de rejeite ativo (call ups declinados - timeout)."
+                            icon={
+                              <Users
+                                size={20}
+                              />
+                            }
+                            data={
+                              countChartData
+                            }
+                            series={
+                              countSeries
+                            }
+                            formatPeriodLabel={
+                              formatPeriodLabel
+                            }
+                          />
+                        </>
+                      )}
+
+                    {/* =========================================
                         TABELA
                     ========================================= */}
 
@@ -1641,9 +2084,11 @@ function BAU() {
                         <div className="bau-table-count">
 
                           {
-                            chartData.length
+                            atNoPisoByStationData.length
                           }{" "}
-                          períodos
+                          linhas · página{" "}
+                          {tablePage + 1} de{" "}
+                          {tableTotalPages}
 
                         </div>
 
@@ -1662,11 +2107,39 @@ function BAU() {
                               </th>
 
                               <th>
+                                Station ID
+                              </th>
+
+                              <th>
+                                Station Code
+                              </th>
+
+                              <th>
+                                Station Name
+                              </th>
+
+                              <th>
                                 ATs no piso
                               </th>
 
                               <th>
                                 ATs delivering
+                              </th>
+
+                              <th>
+                                % Ocupação
+                              </th>
+
+                              <th>
+                                Confirmação D-1
+                              </th>
+
+                              <th>
+                                % Rejeite Ativo
+                              </th>
+
+                              <th>
+                                Rejeite Ativo (abs.)
                               </th>
 
                             </tr>
@@ -1675,14 +2148,21 @@ function BAU() {
 
                           <tbody>
 
-                            {chartData.map(
+                            {pagedStationData.map(
                               (
                                 row,
                                 index
-                              ) => (
+                              ) => {
+
+                                const driversRow =
+                                  driversByStationMap.get(
+                                    `${row.period}|${row.station_code}`
+                                  );
+
+                                return (
 
                                 <tr
-                                  key={`${row.period}-${index}`}
+                                  key={`${row.period}-${row.station_code}-${index}`}
                                 >
 
                                   <td>
@@ -1697,6 +2177,18 @@ function BAU() {
                                   </td>
 
                                   <td>
+                                    {row.station_id}
+                                  </td>
+
+                                  <td>
+                                    {row.station_code}
+                                  </td>
+
+                                  <td>
+                                    {row.station_name}
+                                  </td>
+
+                                  <td>
                                     {row.at_no_piso.toLocaleString(
                                       "pt-BR"
                                     )}
@@ -1708,9 +2200,43 @@ function BAU() {
                                     )}
                                   </td>
 
+                                  <td>
+                                    {driversRow
+                                      ? formatPercent(
+                                          driversRow.percent_ocupacao
+                                        )
+                                      : "-"}
+                                  </td>
+
+                                  <td>
+                                    {driversRow
+                                      ? driversRow.drivers_confirmados.toLocaleString(
+                                          "pt-BR"
+                                        )
+                                      : "-"}
+                                  </td>
+
+                                  <td>
+                                    {driversRow
+                                      ? formatPercent(
+                                          driversRow.percent_rejeite_ativo
+                                        )
+                                      : "-"}
+                                  </td>
+
+                                  <td>
+                                    {driversRow
+                                      ? driversRow.rejeite_ativo_absoluto.toLocaleString(
+                                          "pt-BR"
+                                        )
+                                      : "-"}
+                                  </td>
+
                                 </tr>
 
-                              )
+                                );
+
+                              }
                             )}
 
                           </tbody>
@@ -1718,6 +2244,70 @@ function BAU() {
                         </table>
 
                       </div>
+
+                      {/* =========================================
+                          PAGINAÇÃO
+                      ========================================= */}
+
+                      {tableTotalPages > 1 && (
+
+                        <div className="bau-table-pagination">
+
+                          <button
+                            type="button"
+                            disabled={
+                              tablePage === 0
+                            }
+                            onClick={() =>
+                              setTablePage(
+                                (page) =>
+                                  Math.max(
+                                    0,
+                                    page - 1
+                                  )
+                              )
+                            }
+                          >
+                            <ChevronLeft
+                              size={16}
+                            />
+                            Anterior
+                          </button>
+
+                          <span>
+                            Página{" "}
+                            {tablePage + 1}{" "}
+                            de{" "}
+                            {tableTotalPages}
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={
+                              tablePage >=
+                              tableTotalPages -
+                                1
+                            }
+                            onClick={() =>
+                              setTablePage(
+                                (page) =>
+                                  Math.min(
+                                    tableTotalPages -
+                                      1,
+                                    page + 1
+                                  )
+                              )
+                            }
+                          >
+                            Próxima
+                            <ChevronRight
+                              size={16}
+                            />
+                          </button>
+
+                        </div>
+
+                      )}
 
                     </section>
 
