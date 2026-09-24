@@ -33,7 +33,7 @@ interface DriversBarChartProps {
 // ESCALA "AGRADÁVEL" DO EIXO Y (mesma lógica do gráfico de linha)
 // ============================================================
 
-function computeNiceMax(maxValue: number): number {
+export function computeNiceMax(maxValue: number): number {
   if (maxValue <= 0) {
     return 100;
   }
@@ -64,7 +64,7 @@ function computeNiceMax(maxValue: number): number {
 // BARRA COM TOPO ARREDONDADO (ancorada na base do eixo)
 // ============================================================
 
-function roundedTopBarPath(
+export function roundedTopBarPath(
   x: number,
   yTop: number,
   width: number,
