@@ -341,6 +341,22 @@
   line-height: 1.45;
 }
 
+.bau-kpi-subheading {
+  margin-top: 18px;
+
+  padding-top: 14px;
+
+  border-top: 1px solid rgba(122, 148, 177, 0.12);
+
+  color: #93a2b8;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 
 /* =========================================================
    LISTA DE KPIs
@@ -938,6 +954,34 @@
   font-family: "Inter", Arial, sans-serif;
 
   font-weight: 600;
+
+  letter-spacing: 0.1px;
+}
+
+
+/* =========================================================
+   CONECTOR DO GAP — GRÁFICO DE SPR
+   (liga o topo das duas barras do período; cor neutra, não
+   compete com as cores das duas séries absolutas)
+   ========================================================= */
+
+.spr-gap-connector {
+  stroke: #6b7d94;
+
+  stroke-width: 1.5;
+
+  stroke-dasharray: 3 3;
+
+  fill: none;
+}
+
+.spr-gap-label {
+  fill: #c9d3e0;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  font-family: "Inter", Arial, sans-serif;
 
   letter-spacing: 0.1px;
 }
