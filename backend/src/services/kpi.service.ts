@@ -23,6 +23,15 @@ interface AtNoPisoPeriod {
   at_no_piso: number;
 }
 
+export interface AtNoPisoStationPeriod {
+  period: string;
+  station_id: number;
+  station_code: string;
+  station_name: string;
+  qty_at_delivering: number;
+  at_no_piso: number;
+}
+
 export interface StationOption {
   station_id: number;
   station_code: string;
@@ -266,6 +275,59 @@ export async function getAtNoPisoData(
   );
 
   // =========================
+  // AGRUPAMENTO POR PERÍODO + ESTAÇÃO
+  // (usado só pela tabela "Detalhamento", os totais acima
+  // usados nos gráficos continuam somando todas as estações)
+  // =========================
+
+  function buildByStation(
+    keyFn: (item: AtNoPisoData) => string
+  ): AtNoPisoStationPeriod[] {
+    const map = new Map<string, AtNoPisoStationPeriod>();
+
+    filteredData.forEach((item) => {
+      const period = keyFn(item);
+      const mapKey = `${period}|${item.station_code}`;
+
+      if (!map.has(mapKey)) {
+        map.set(mapKey, {
+          period,
+          station_id: item.station_id,
+          station_code: item.station_code,
+          station_name: item.station_name,
+          qty_at_delivering: 0,
+          at_no_piso: 0,
+        });
+      }
+
+      const current = map.get(mapKey)!;
+
+      current.qty_at_delivering += item.qty_at_delivering;
+      current.at_no_piso += item.at_no_piso;
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.period !== b.period) {
+        return a.period.localeCompare(b.period);
+      }
+
+      return a.station_code.localeCompare(b.station_code);
+    });
+  }
+
+  const dailyByStation = buildByStation(
+    (item) => item.d_ref
+  );
+
+  const weeklyByStation = buildByStation((item) =>
+    getWeekStart(item.d_ref)
+  );
+
+  const monthlyByStation = buildByStation((item) =>
+    item.d_ref.substring(0, 7)
+  );
+
+  // =========================
   // RESULTADO
   // =========================
 
@@ -273,6 +335,9 @@ export async function getAtNoPisoData(
     summary,
     daily,
     weekly,
+    dailyByStation,
+    weeklyByStation,
+    monthlyByStation,
     monthly,
   };
 }
