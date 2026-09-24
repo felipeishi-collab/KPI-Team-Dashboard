@@ -21,6 +21,9 @@ import { bauKpis } from "./bauKpis";
 import DriversBarChart from "./DriversBarChart";
 import type { BarChartDatum } from "./DriversBarChart";
 
+import SprGapChart from "./SprGapChart";
+import type { SprChartDatum } from "./SprGapChart";
+
 import "./BAU.css";
 
 interface User {
@@ -92,6 +95,35 @@ interface DriversApiResponse {
   };
 }
 
+interface SprPeriod {
+  period: string;
+  spr_route: number;
+  spr_delivering: number;
+  gap: number;
+}
+
+interface SprStationPeriod {
+  period: string;
+  station_id: number;
+  station_code: string;
+  station_name: string;
+  spr_route: number;
+  spr_delivering: number;
+  gap: number;
+}
+
+interface SprApiResponse {
+  data: {
+    daily: SprPeriod[];
+    weekly: SprPeriod[];
+    monthly: SprPeriod[];
+
+    dailyByStation: SprStationPeriod[];
+    weeklyByStation: SprStationPeriod[];
+    monthlyByStation: SprStationPeriod[];
+  };
+}
+
 interface StationOption {
   station_id: number;
   station_code: string;
@@ -106,6 +138,47 @@ type Granularity =
 // quantidade de linhas da tabela "Detalhamento" exibidas
 // por página (ver PAGINAÇÃO DA TABELA, dentro do componente)
 const TABLE_PAGE_SIZE = 50;
+
+// gráficos de drivers que aparecem como opção no painel de
+// KPIs à esquerda — selecionar/desmarcar mostra ou esconde o
+// gráfico correspondente lá embaixo
+interface DriverChartOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const driverChartOptions: DriverChartOption[] = [
+  {
+    id: "occupancy",
+    name: "Ocupação e Rejeite Ativo (%)",
+    description:
+      "% de ocupação e % de rejeite ativo por período.",
+  },
+  {
+    id: "confirmation",
+    name: "Confirmação D-1 e Rejeite (abs.)",
+    description:
+      "Drivers confirmados no D-1 e volume absoluto de rejeite ativo.",
+  },
+];
+
+// gráfico de SPR (Delivering x Route) — mesmo padrão de seleção
+// dos gráficos de drivers acima
+interface SprChartOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const sprChartOptions: SprChartOption[] = [
+  {
+    id: "spr_gap",
+    name: "SPR Delivering x Route",
+    description:
+      "Comparação entre SPR Delivering e SPR Route, com o GAP (Delivering − Route) por período.",
+  },
+];
 
 function BAU() {
   // ============================================================
@@ -228,6 +301,31 @@ function BAU() {
     ]);
 
   // ============================================================
+  // GRÁFICOS DE DRIVERS SELECIONADOS
+  // (mesmo painel de KPIs à esquerda também deixa escolher quais
+  // dos dois gráficos de drivers aparecem na tela)
+  // ============================================================
+
+  const [
+    selectedDriverCharts,
+    setSelectedDriverCharts,
+  ] = useState<string[]>([
+    "occupancy",
+    "confirmation",
+  ]);
+
+  // ============================================================
+  // GRÁFICO DE SPR SELECIONADO
+  // (mesmo painel de KPIs à esquerda também deixa escolher se o
+  // gráfico de SPR aparece na tela)
+  // ============================================================
+
+  const [
+    selectedSprCharts,
+    setSelectedSprCharts,
+  ] = useState<string[]>(["spr_gap"]);
+
+  // ============================================================
   // GRANULARIDADE
   // ============================================================
 
@@ -278,6 +376,21 @@ function BAU() {
     useState(true);
 
   const [driversError, setDriversError] =
+    useState("");
+
+  // ============================================================
+  // DADOS — SPR (DELIVERING / ROUTE / GAP)
+  // ============================================================
+
+  const [sprData, setSprData] =
+    useState<SprApiResponse["data"] | null>(
+      null
+    );
+
+  const [sprLoading, setSprLoading] =
+    useState(true);
+
+  const [sprError, setSprError] =
     useState("");
 
   // ============================================================
@@ -478,6 +591,99 @@ function BAU() {
   ]);
 
   // ============================================================
+  // BUSCAR DADOS DE SPR (DELIVERING / ROUTE / GAP)
+  // ============================================================
+
+  useEffect(() => {
+    async function fetchSprData() {
+      try {
+        setSprLoading(true);
+        setSprError("");
+
+        const params =
+          new URLSearchParams();
+
+        if (startDate) {
+          params.append(
+            "startDate",
+            startDate
+          );
+        }
+
+        if (endDate) {
+          params.append(
+            "endDate",
+            endDate
+          );
+        }
+
+        if (stationCode) {
+          params.append(
+            "station",
+            stationCode
+          );
+        }
+
+        if (stationId) {
+          params.append(
+            "stationId",
+            stationId
+          );
+        }
+
+        if (stationName) {
+          params.append(
+            "stationName",
+            stationName
+          );
+        }
+
+        const queryString =
+          params.toString();
+
+        const url = queryString
+          ? `http://localhost:3001/api/spr?${queryString}`
+          : "http://localhost:3001/api/spr";
+
+        const response =
+          await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(
+            `Erro HTTP ${response.status}`
+          );
+        }
+
+        const result: SprApiResponse =
+          await response.json();
+
+        setSprData(result.data);
+      } catch (err) {
+        console.error(
+          "Erro ao buscar dados de SPR:",
+          err
+        );
+
+        setSprError(
+          "Não foi possível carregar os dados de SPR."
+        );
+
+        setSprData(null);
+      } finally {
+        setSprLoading(false);
+      }
+    }
+
+    fetchSprData();
+  }, [
+    startDate,
+    endDate,
+    stationCode,
+    stationId,
+    stationName,
+  ]);
+
+  // ============================================================
   // RESET DOS FILTROS
   // ============================================================
 
@@ -522,6 +728,21 @@ function BAU() {
     return driversData[granularity] || [];
   }, [
     driversData,
+    granularity,
+  ]);
+
+  // ============================================================
+  // DADOS DO GRÁFICO DE SPR (mesma granularidade dos demais)
+  // ============================================================
+
+  const sprChartData = useMemo(() => {
+    if (!sprData) {
+      return [];
+    }
+
+    return sprData[granularity] || [];
+  }, [
+    sprData,
     granularity,
   ]);
 
@@ -571,6 +792,33 @@ function BAU() {
         ])
       ),
     [driversByStationData]
+  );
+
+  const sprByStationData = useMemo(() => {
+    if (!sprData) {
+      return [];
+    }
+
+    const byGranularity = {
+      daily: sprData.dailyByStation,
+      weekly: sprData.weeklyByStation,
+      monthly: sprData.monthlyByStation,
+    };
+
+    return byGranularity[granularity] || [];
+  }, [sprData, granularity]);
+
+  // mapa "período|station_code" -> dados de SPR, para juntar na
+  // tabela (mesmo padrão do driversByStationMap acima)
+  const sprByStationMap = useMemo(
+    () =>
+      new Map(
+        sprByStationData.map((item) => [
+          `${item.period}|${item.station_code}`,
+          item,
+        ])
+      ),
+    [sprByStationData]
   );
 
   // ============================================================
@@ -628,6 +876,24 @@ function BAU() {
         )}k`
       : value.toLocaleString("pt-BR");
 
+  // GAP_SPR sempre com sinal (+ ou -), pra direção ficar clara
+  // sem precisar de cor na tabela
+  const formatGap = (value: number) => {
+    const formatted = Math.abs(
+      value
+    ).toLocaleString("pt-BR");
+
+    if (value > 0) {
+      return `+${formatted}`;
+    }
+
+    if (value < 0) {
+      return `-${formatted}`;
+    }
+
+    return formatted;
+  };
+
   const occupancyChartData: BarChartDatum[] =
     useMemo(
       () =>
@@ -679,6 +945,50 @@ function BAU() {
         return [
           ...current,
           kpiId,
+        ];
+      }
+    );
+  };
+
+  const toggleDriverChart = (
+    chartId: string
+  ) => {
+    setSelectedDriverCharts(
+      (current) => {
+        if (
+          current.includes(chartId)
+        ) {
+          return current.filter(
+            (id) =>
+              id !== chartId
+          );
+        }
+
+        return [
+          ...current,
+          chartId,
+        ];
+      }
+    );
+  };
+
+  const toggleSprChart = (
+    chartId: string
+  ) => {
+    setSelectedSprCharts(
+      (current) => {
+        if (
+          current.includes(chartId)
+        ) {
+          return current.filter(
+            (id) =>
+              id !== chartId
+          );
+        }
+
+        return [
+          ...current,
+          chartId,
         ];
       }
     );
@@ -1334,6 +1644,108 @@ function BAU() {
 
               </div>
 
+              <p className="bau-kpi-help bau-kpi-subheading">
+                Gráfico de SPR
+              </p>
+
+              <div className="bau-kpi-list">
+
+                {sprChartOptions.map(
+                  (option) => {
+
+                    const isSelected =
+                      selectedSprCharts.includes(
+                        option.id
+                      );
+
+                    return (
+                      <button
+                        key={
+                          option.id
+                        }
+                        className={`bau-kpi-item ${
+                          isSelected
+                            ? "selected"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          toggleSprChart(
+                            option.id
+                          )
+                        }
+                      >
+
+                        <div className="bau-kpi-item-name">
+                          {
+                            option.name
+                          }
+                        </div>
+
+                        <div className="bau-kpi-item-description">
+                          {
+                            option.description
+                          }
+                        </div>
+
+                      </button>
+                    );
+
+                  }
+                )}
+
+              </div>
+
+              <p className="bau-kpi-help bau-kpi-subheading">
+                Gráficos de drivers
+              </p>
+
+              <div className="bau-kpi-list">
+
+                {driverChartOptions.map(
+                  (option) => {
+
+                    const isSelected =
+                      selectedDriverCharts.includes(
+                        option.id
+                      );
+
+                    return (
+                      <button
+                        key={
+                          option.id
+                        }
+                        className={`bau-kpi-item ${
+                          isSelected
+                            ? "selected"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          toggleDriverChart(
+                            option.id
+                          )
+                        }
+                      >
+
+                        <div className="bau-kpi-item-name">
+                          {
+                            option.name
+                          }
+                        </div>
+
+                        <div className="bau-kpi-item-description">
+                          {
+                            option.description
+                          }
+                        </div>
+
+                      </button>
+                    );
+
+                  }
+                )}
+
+              </div>
+
             </aside>
 
             {/* =================================================
@@ -1498,6 +1910,26 @@ function BAU() {
                         GRÁFICO
                     ========================================= */}
 
+                    {selectedKpis.length ===
+                      0 && (
+                      <section className="bau-chart-card">
+                        <div className="bau-chart-placeholder">
+                          <strong>
+                            Nenhum indicador
+                            selecionado
+                          </strong>
+                          <span>
+                            Selecione "ATs no
+                            piso" ou "% ATs no
+                            piso" no painel de
+                            KPIs.
+                          </span>
+                        </div>
+                      </section>
+                    )}
+
+                    {selectedKpis.length >
+                      0 && (
                     <section className="bau-chart-card">
 
                       {/* =======================================
@@ -1982,6 +2414,82 @@ function BAU() {
                       )}
 
                     </section>
+                    )}
+
+                    {/* =========================================
+                        SPR — DELIVERING X ROUTE (GAP)
+                    ========================================= */}
+
+                    {sprLoading && (
+                      <section className="bau-chart-card">
+                        <div className="bau-chart-placeholder">
+                          <strong>
+                            Carregando dados...
+                          </strong>
+                          <span>
+                            Buscando informações
+                            de SPR.
+                          </span>
+                        </div>
+                      </section>
+                    )}
+
+                    {!sprLoading &&
+                      sprError && (
+                        <section className="bau-chart-card">
+                          <div className="bau-chart-placeholder">
+                            <strong>
+                              Erro ao carregar
+                              dados
+                            </strong>
+                            <span>
+                              {sprError}
+                            </span>
+                          </div>
+                        </section>
+                      )}
+
+                    {!sprLoading &&
+                      !sprError &&
+                      !selectedSprCharts.includes(
+                        "spr_gap"
+                      ) && (
+                        <section className="bau-chart-card">
+                          <div className="bau-chart-placeholder">
+                            <strong>
+                              Nenhum gráfico
+                              selecionado
+                            </strong>
+                            <span>
+                              Selecione "SPR
+                              Delivering x Route"
+                              no painel de KPIs.
+                            </span>
+                          </div>
+                        </section>
+                      )}
+
+                    {!sprLoading &&
+                      !sprError &&
+                      selectedSprCharts.includes(
+                        "spr_gap"
+                      ) && (
+                        <SprGapChart
+                          title="SPR Delivering x Route"
+                          description="Comparação entre SPR Delivering e SPR Route por período, com o GAP (Delivering − Route) destacado."
+                          icon={
+                            <BarChart3
+                              size={20}
+                            />
+                          }
+                          data={
+                            sprChartData as SprChartDatum[]
+                          }
+                          formatPeriodLabel={
+                            formatPeriodLabel
+                          }
+                        />
+                      )}
 
                     {/* =========================================
                         DRIVERS — OCUPAÇÃO E REJEITE ATIVO
@@ -2017,46 +2525,75 @@ function BAU() {
                       )}
 
                     {!driversLoading &&
-                      !driversError && (
-                        <>
-                          <DriversBarChart
-                            title="Ocupação e Rejeite Ativo (%)"
-                            description="% de ocupação (drivers ativos / confirmados + não confirmados) e % de rejeite ativo (rejeites, exceto timeout, / call ups declinados)."
-                            icon={
-                              <Percent
-                                size={20}
-                              />
-                            }
-                            data={
-                              occupancyChartData
-                            }
-                            series={
-                              occupancySeries
-                            }
-                            formatPeriodLabel={
-                              formatPeriodLabel
-                            }
-                          />
+                      !driversError &&
+                      selectedDriverCharts.length ===
+                        0 && (
+                        <section className="bau-chart-card">
+                          <div className="bau-chart-placeholder">
+                            <strong>
+                              Nenhum gráfico
+                              selecionado
+                            </strong>
+                            <span>
+                              Selecione "Ocupação
+                              e Rejeite Ativo
+                              (%)" ou
+                              "Confirmação D-1 e
+                              Rejeite (abs.)" no
+                              painel de KPIs.
+                            </span>
+                          </div>
+                        </section>
+                      )}
 
-                          <DriversBarChart
-                            title="Confirmação D-1 e Rejeite Ativo (absoluto)"
-                            description="Drivers confirmados no D-1 e volume absoluto de rejeite ativo (call ups declinados - timeout)."
-                            icon={
-                              <Users
-                                size={20}
-                              />
-                            }
-                            data={
-                              countChartData
-                            }
-                            series={
-                              countSeries
-                            }
-                            formatPeriodLabel={
-                              formatPeriodLabel
-                            }
-                          />
-                        </>
+                    {!driversLoading &&
+                      !driversError &&
+                      selectedDriverCharts.includes(
+                        "occupancy"
+                      ) && (
+                        <DriversBarChart
+                          title="Ocupação e Rejeite Ativo (%)"
+                          description="% de ocupação (drivers ativos / confirmados + não confirmados) e % de rejeite ativo (rejeites, exceto timeout, / call ups declinados)."
+                          icon={
+                            <Percent
+                              size={20}
+                            />
+                          }
+                          data={
+                            occupancyChartData
+                          }
+                          series={
+                            occupancySeries
+                          }
+                          formatPeriodLabel={
+                            formatPeriodLabel
+                          }
+                        />
+                      )}
+
+                    {!driversLoading &&
+                      !driversError &&
+                      selectedDriverCharts.includes(
+                        "confirmation"
+                      ) && (
+                        <DriversBarChart
+                          title="Confirmação D-1 e Rejeite Ativo (absoluto)"
+                          description="Drivers confirmados no D-1 e volume absoluto de rejeite ativo (call ups declinados - timeout)."
+                          icon={
+                            <Users
+                              size={20}
+                            />
+                          }
+                          data={
+                            countChartData
+                          }
+                          series={
+                            countSeries
+                          }
+                          formatPeriodLabel={
+                            formatPeriodLabel
+                          }
+                        />
                       )}
 
                     {/* =========================================
@@ -2142,6 +2679,18 @@ function BAU() {
                                 Rejeite Ativo (abs.)
                               </th>
 
+                              <th>
+                                SPR Delivering
+                              </th>
+
+                              <th>
+                                SPR Route
+                              </th>
+
+                              <th>
+                                GAP_SPR
+                              </th>
+
                             </tr>
 
                           </thead>
@@ -2156,6 +2705,11 @@ function BAU() {
 
                                 const driversRow =
                                   driversByStationMap.get(
+                                    `${row.period}|${row.station_code}`
+                                  );
+
+                                const sprRow =
+                                  sprByStationMap.get(
                                     `${row.period}|${row.station_code}`
                                   );
 
@@ -2228,6 +2782,30 @@ function BAU() {
                                     {driversRow
                                       ? driversRow.rejeite_ativo_absoluto.toLocaleString(
                                           "pt-BR"
+                                        )
+                                      : "-"}
+                                  </td>
+
+                                  <td>
+                                    {sprRow
+                                      ? sprRow.spr_delivering.toLocaleString(
+                                          "pt-BR"
+                                        )
+                                      : "-"}
+                                  </td>
+
+                                  <td>
+                                    {sprRow
+                                      ? sprRow.spr_route.toLocaleString(
+                                          "pt-BR"
+                                        )
+                                      : "-"}
+                                  </td>
+
+                                  <td>
+                                    {sprRow
+                                      ? formatGap(
+                                          sprRow.gap
                                         )
                                       : "-"}
                                   </td>
