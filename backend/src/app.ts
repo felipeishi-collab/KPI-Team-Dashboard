@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes";
 import kpiRoutes from "./routes/kpi.routes";
 import updatesRoutes from "./routes/updates.routes";
 import driversRoutes from "./routes/drivers.routes";
+import sprRoutes from "./routes/spr.routes";
 
 const app = express();
 
@@ -27,5 +28,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/updates", updatesRoutes);
 app.use("/api/drivers", driversRoutes);
+app.use("/api/spr", sprRoutes);
 
 export default app;
