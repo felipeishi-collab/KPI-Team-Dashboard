@@ -27,6 +27,10 @@ interface DriversBarChartProps {
   data: BarChartDatum[];
   series: BarSeriesConfig[];
   formatPeriodLabel: (period: string) => string;
+  // exibe o valor em cima de cada barra
+  showValueLabels?: boolean;
+  // controles extras no cabeçalho do card (ex.: botões % / Abs)
+  headerActions?: ReactNode;
 }
 
 // ============================================================
@@ -100,6 +104,8 @@ function DriversBarChart({
   data,
   series,
   formatPeriodLabel,
+  showValueLabels = false,
+  headerActions,
 }: DriversBarChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<
     number | null
@@ -166,7 +172,11 @@ function DriversBarChart({
           <p>{description}</p>
         </div>
 
-        <div className="bau-chart-icon">{icon}</div>
+        <div className="bau-card-header-actions">
+          {headerActions}
+
+          <div className="bau-chart-icon">{icon}</div>
+        </div>
       </div>
 
       {/* LEGENDA (obrigatória para 2+ séries) */}
@@ -285,24 +295,45 @@ function DriversBarChart({
                       chartHeight -
                       barHeight;
 
+                    const barOpacity =
+                      hoveredIndex === null ||
+                      hoveredIndex === index
+                        ? 1
+                        : 0.35;
+
                     return (
-                      <path
-                        key={config.key}
-                        d={roundedTopBarPath(
-                          barX,
-                          barYTop,
-                          barWidth,
-                          barHeight,
-                          4
-                        )}
-                        fill={config.color}
-                        opacity={
-                          hoveredIndex === null ||
-                          hoveredIndex === index
-                            ? 1
-                            : 0.35
-                        }
-                      />
+                      <g key={config.key}>
+                        <path
+                          d={roundedTopBarPath(
+                            barX,
+                            barYTop,
+                            barWidth,
+                            barHeight,
+                            4
+                          )}
+                          fill={config.color}
+                          opacity={barOpacity}
+                        />
+
+                        {/* VALOR EM CIMA DA BARRA */}
+
+                        {showValueLabels &&
+                          value > 0 && (
+                            <text
+                              x={barX + barWidth / 2}
+                              y={barYTop - 6}
+                              textAnchor="middle"
+                              className="chart-bar-value-label"
+                              opacity={barOpacity}
+                              pointerEvents="none"
+                            >
+                              {(
+                                config.formatAxis ??
+                                config.formatValue
+                              )(value)}
+                            </text>
+                          )}
+                      </g>
                     );
                   })}
 
