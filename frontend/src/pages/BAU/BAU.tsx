@@ -4,6 +4,7 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  Download,
   Filter,
   Percent,
   RotateCcw,
@@ -14,9 +15,17 @@ import {
 import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
 
-import { useContainerWidth } from "../../hooks/useContainerWidth";
 
 import { bauKpis } from "./bauKpis";
+
+import {
+  downloadCsv,
+  downloadXlsx,
+} from "../../utils/exportTable";
+import type {
+  ExportCell,
+  ExportColumn,
+} from "../../utils/exportTable";
 
 import DriversBarChart from "./DriversBarChart";
 import type { BarChartDatum } from "./DriversBarChart";
@@ -139,6 +148,40 @@ type Granularity =
 // por página (ver PAGINAÇÃO DA TABELA, dentro do componente)
 const TABLE_PAGE_SIZE = 50;
 
+// ============================================================
+// JANELA PADRÃO DE DATAS
+//
+// Ao abrir a tela (ou clicar em "Limpar filtros"), a visão
+// diária não deve vir com todo o histórico de uma vez — por
+// padrão mostramos só os últimos 30 dias (hoje incluído) em
+// todos os gráficos. O usuário ainda pode ajustar/ampliar pelos
+// filtros de data normalmente.
+// ============================================================
+
+function formatDateForFilter(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultDateRange() {
+  const end = new Date();
+  const start = new Date();
+
+  start.setDate(start.getDate() - 29);
+
+  return {
+    startDate: formatDateForFilter(start),
+    endDate: formatDateForFilter(end),
+  };
+}
+
 // gráficos de drivers que aparecem como opção no painel de
 // KPIs à esquerda — selecionar/desmarcar mostra ou esconde o
 // gráfico correspondente lá embaixo
@@ -151,17 +194,22 @@ interface DriverChartOption {
 const driverChartOptions: DriverChartOption[] = [
   {
     id: "occupancy",
-    name: "Ocupação e Rejeite Ativo (%)",
+    name: "Ocupação",
     description:
-      "% de ocupação e % de rejeite ativo por período.",
+      "% de ocupação ou drivers confirmados no D-1 (abs.), por período.",
   },
   {
-    id: "confirmation",
-    name: "Confirmação D-1 e Rejeite (abs.)",
+    id: "rejection",
+    name: "Rejeite Ativo",
     description:
-      "Drivers confirmados no D-1 e volume absoluto de rejeite ativo.",
+      "% de rejeite ativo ou volume absoluto de rejeite ativo, por período.",
   },
 ];
+
+// visão exibida dentro de cada gráfico de drivers:
+// percentual ou absoluto (um ou outro, nunca os dois juntos —
+// assim cada gráfico tem uma escala só)
+type DriverChartView = "percent" | "abs";
 
 // gráfico de SPR (Delivering x Route) — mesmo padrão de seleção
 // dos gráficos de drivers acima
@@ -208,11 +256,13 @@ function BAU() {
   const [stationName, setStationName] =
     useState("");
 
+  const defaultDateRange = getDefaultDateRange();
+
   const [startDate, setStartDate] =
-    useState("");
+    useState(defaultDateRange.startDate);
 
   const [endDate, setEndDate] =
-    useState("");
+    useState(defaultDateRange.endDate);
 
   // incrementado a cada "Limpar filtros", usado como key
   // dos inputs de data pra forçar o navegador a limpá-los
@@ -311,8 +361,15 @@ function BAU() {
     setSelectedDriverCharts,
   ] = useState<string[]>([
     "occupancy",
-    "confirmation",
+    "rejection",
   ]);
+
+  // visão (% ou abs.) selecionada em cada gráfico de drivers
+  const [occupancyView, setOccupancyView] =
+    useState<DriverChartView>("percent");
+
+  const [rejectionView, setRejectionView] =
+    useState<DriverChartView>("percent");
 
   // ============================================================
   // GRÁFICO DE SPR SELECIONADO
@@ -331,22 +388,6 @@ function BAU() {
 
   const [granularity, setGranularity] =
     useState<Granularity>("daily");
-
-  // ============================================================
-  // TAMANHO REAL DO GRÁFICO DE LINHA
-  // (o viewBox do SVG precisa bater com o tamanho renderizado
-  // de verdade, senão os textos dos eixos ficam esticados —
-  // ver useContainerWidth)
-  // ============================================================
-
-  const [
-    lineChartContainerRef,
-    lineChartWidth,
-    lineChartHeight,
-  ] = useContainerWidth<HTMLDivElement>(
-    1000,
-    400
-  );
 
   // ============================================================
   // DADOS
@@ -392,17 +433,6 @@ function BAU() {
 
   const [sprError, setSprError] =
     useState("");
-
-  // ============================================================
-  // HOVER DO GRÁFICO
-  // ============================================================
-
-  const [hoveredPoint, setHoveredPoint] =
-    useState<{
-      index: number;
-      x: number;
-      y: number;
-    } | null>(null);
 
   // ============================================================
   // BUSCAR DADOS DA API
@@ -691,8 +721,15 @@ function BAU() {
     setStationCode("");
     setStationId("");
     setStationName("");
-    setStartDate("");
-    setEndDate("");
+
+    // volta para a mesma janela padrão de 30 dias usada ao
+    // abrir a tela, em vez de limpar pra "sem filtro de data"
+    // (que reabriria o mesmo problema de trazer o histórico
+    // inteiro de uma vez na visão diária)
+    const resetDateRange = getDefaultDateRange();
+
+    setStartDate(resetDateRange.startDate);
+    setEndDate(resetDateRange.endDate);
 
     // força o React a recriar os inputs de data —
     // alguns navegadores não limpam visualmente um
@@ -822,6 +859,95 @@ function BAU() {
   );
 
   // ============================================================
+  // DOWNLOAD DA TABELA "DETALHAMENTO" (CSV / XLSX)
+  //
+  // Exporta TODAS as linhas da tabela (todas as páginas), já com
+  // os filtros aplicados — os dados da tabela vêm da API com os
+  // mesmos filtros de data/estação da barra de filtros, então o
+  // arquivo sempre bate com o que está na tela.
+  // ============================================================
+
+  const exportColumns: ExportColumn[] = [
+    { header: "Período", type: "date", width: 12 },
+    { header: "Station ID", type: "int", width: 12 },
+    { header: "Station Code", type: "text", width: 16 },
+    { header: "Station Name", type: "text", width: 30 },
+    { header: "ATs no piso", type: "int", width: 13 },
+    { header: "ATs delivering", type: "int", width: 15 },
+    { header: "% Ocupação", type: "percent", width: 13 },
+    { header: "Confirmação D-1", type: "int", width: 16 },
+    { header: "% Rejeite Ativo", type: "percent", width: 16 },
+    { header: "Rejeite Ativo (abs.)", type: "int", width: 19 },
+    { header: "SPR Delivering", type: "decimal", width: 15 },
+    { header: "SPR Route", type: "decimal", width: 12 },
+    { header: "GAP_SPR", type: "decimal", width: 11 },
+  ];
+
+  const buildExportRows = (): ExportCell[][] =>
+    atNoPisoByStationData.map((row) => {
+      const key = `${row.period}|${row.station_code}`;
+
+      const driversRow = driversByStationMap.get(key);
+      const sprRow = sprByStationMap.get(key);
+
+      return [
+        row.period,
+        row.station_id,
+        row.station_code,
+        row.station_name,
+        row.at_no_piso,
+        row.qty_at_delivering,
+        driversRow?.percent_ocupacao,
+        driversRow?.drivers_confirmados,
+        driversRow?.percent_rejeite_ativo,
+        driversRow?.rejeite_ativo_absoluto,
+        sprRow?.spr_delivering,
+        sprRow?.spr_route,
+        sprRow?.gap,
+      ];
+    });
+
+  // ex.: detalhamento_bau_diario_2026-08-27_a_2026-09-25
+  const buildExportFileName = () => {
+    const granularityLabel = {
+      daily: "diario",
+      weekly: "semanal",
+      monthly: "mensal",
+    }[granularity];
+
+    const parts = ["detalhamento_bau", granularityLabel];
+
+    if (startDate || endDate) {
+      parts.push(
+        `${startDate || "inicio"}_a_${endDate || "hoje"}`
+      );
+    }
+
+    if (stationCode) {
+      parts.push(stationCode);
+    }
+
+    return parts.join("_").replace(/[^\w.-]+/g, "-");
+  };
+
+  const handleDownloadCsv = () => {
+    downloadCsv(
+      `${buildExportFileName()}.csv`,
+      exportColumns,
+      buildExportRows()
+    );
+  };
+
+  const handleDownloadXlsx = () => {
+    downloadXlsx(
+      `${buildExportFileName()}.xlsx`,
+      exportColumns,
+      buildExportRows(),
+      "Detalhamento"
+    );
+  };
+
+  // ============================================================
   // PAGINAÇÃO DA TABELA "DETALHAMENTO"
   // (a tabela é uma linha por estação por período, então sem
   // paginação ela podia chegar a dezenas de milhares de <tr>
@@ -902,27 +1028,75 @@ function BAU() {
           values: {
             percent_ocupacao:
               item.percent_ocupacao,
-            percent_rejeite_ativo:
-              item.percent_rejeite_ativo,
+            drivers_confirmados:
+              item.drivers_confirmados,
           },
         })),
       [driversChartData]
     );
 
-  const countChartData: BarChartDatum[] =
+  const rejectionChartData: BarChartDatum[] =
     useMemo(
       () =>
         driversChartData.map((item) => ({
           period: item.period,
           values: {
-            drivers_confirmados:
-              item.drivers_confirmados,
+            percent_rejeite_ativo:
+              item.percent_rejeite_ativo,
             rejeite_ativo_absoluto:
               item.rejeite_ativo_absoluto,
           },
         })),
       [driversChartData]
     );
+
+  // ============================================================
+  // SÉRIES DOS GRÁFICOS DE "ATs NO PISO" (lado a lado)
+  // ============================================================
+
+  const atNoPisoChartData: BarChartDatum[] = useMemo(
+    () =>
+      chartData.map((item) => ({
+        period: item.period,
+        values: {
+          at_no_piso: item.at_no_piso,
+        },
+      })),
+    [chartData]
+  );
+
+  const atDeliveringChartData: BarChartDatum[] = useMemo(
+    () =>
+      chartData.map((item) => ({
+        period: item.period,
+        values: {
+          qty_at_delivering: item.qty_at_delivering,
+        },
+      })),
+    [chartData]
+  );
+
+  const atNoPisoSeries = [
+    {
+      key: "at_no_piso",
+      label: "ATs no piso",
+      color: "#ff5c2a",
+      formatValue: (value: number) =>
+        value.toLocaleString("pt-BR"),
+      formatAxis: formatK,
+    },
+  ];
+
+  const atDeliveringSeries = [
+    {
+      key: "qty_at_delivering",
+      label: "ATs (qty_at_delivering)",
+      color: "#3987e5",
+      formatValue: (value: number) =>
+        value.toLocaleString("pt-BR"),
+      formatAxis: formatK,
+    },
+  ];
 
   // ============================================================
   // SELEÇÃO DE KPI
@@ -1018,216 +1192,79 @@ function BAU() {
   };
 
   // ============================================================
-  // VALOR MÁXIMO DO GRÁFICO
-  // ============================================================
-
-  const maxValue = useMemo(() => {
-    if (!chartData.length) {
-      return 0;
-    }
-
-    return Math.max(
-      ...chartData.map(
-        (item) =>
-          item.at_no_piso
-      )
-    );
-  }, [chartData]);
-
-  // ============================================================
-  // ESCALA DO EIXO Y
-  // ============================================================
-
-  const chartMaxValue =
-    useMemo(() => {
-      if (maxValue <= 0) {
-        return 100;
-      }
-
-      const magnitude =
-        Math.pow(
-          10,
-          Math.floor(
-            Math.log10(maxValue)
-          )
-        );
-
-      const normalized =
-        maxValue / magnitude;
-
-      let multiplier = 1;
-
-      if (
-        normalized <= 1
-      ) {
-        multiplier = 1;
-      } else if (
-        normalized <= 2
-      ) {
-        multiplier = 2;
-      } else if (
-        normalized <= 5
-      ) {
-        multiplier = 5;
-      } else {
-        multiplier = 10;
-      }
-
-      return (
-        multiplier *
-        magnitude
-      );
-    }, [maxValue]);
-
-  // ============================================================
-  // PONTOS DO GRÁFICO
-  // ============================================================
-
-  const chartPoints = useMemo(() => {
-    if (
-      !chartData.length ||
-      chartMaxValue <= 0
-    ) {
-      return "";
-    }
-
-    const width = lineChartWidth;
-    const height = lineChartHeight;
-
-    const paddingLeft = 70;
-    const paddingRight = 30;
-    const paddingTop = 40;
-    const paddingBottom = 50;
-
-    const chartWidth =
-      width -
-      paddingLeft -
-      paddingRight;
-
-    const chartHeight =
-      height -
-      paddingTop -
-      paddingBottom;
-
-    return chartData
-      .map(
-        (
-          item,
-          index
-        ) => {
-          const x =
-            chartData.length ===
-            1
-              ? width / 2
-              : paddingLeft +
-                (index /
-                  (chartData.length -
-                    1)) *
-                  chartWidth;
-
-          const y =
-            paddingTop +
-            chartHeight -
-            (item.at_no_piso /
-              chartMaxValue) *
-              chartHeight;
-
-          return `${x},${y}`;
-        }
-      )
-      .join(" ");
-  }, [
-    chartData,
-    chartMaxValue,
-    lineChartWidth,
-    lineChartHeight,
-  ]);
-
-  // ============================================================
-  // INTERVALO DAS LABELS DO EIXO X
-  // ============================================================
-
-  const xLabelInterval =
-    Math.max(
-      1,
-      Math.ceil(
-        chartData.length / 7
-      )
-    );
-
-  // ============================================================
-  // DADOS DO TOOLTIP (VALOR + PERCENTUAL DO PONTO)
-  // ============================================================
-
-  const hoveredTooltip = useMemo(() => {
-    if (!hoveredPoint) {
-      return null;
-    }
-
-    const item =
-      chartData[hoveredPoint.index];
-
-    if (!item) {
-      return null;
-    }
-
-    const percent =
-      item.qty_at_delivering > 0
-        ? (item.at_no_piso /
-            item.qty_at_delivering) *
-          100
-        : 0;
-
-    return {
-      item,
-      percent,
-    };
-  }, [
-    hoveredPoint,
-    chartData,
-  ]);
-
-  // ============================================================
   // SÉRIES DOS GRÁFICOS DE DRIVERS
   // ============================================================
 
   const formatAxisPercent = (value: number) =>
     `${Math.round(value)}%`;
 
-  const occupancySeries = [
-    {
-      key: "percent_ocupacao",
-      label: "% Ocupação",
-      color: "#199e70",
-      formatValue: formatPercent,
-      formatAxis: formatAxisPercent,
-    },
-    {
-      key: "percent_rejeite_ativo",
-      label: "% Rejeite Ativo",
-      color: "#d95926",
-      formatValue: formatPercent,
-      formatAxis: formatAxisPercent,
-    },
-  ];
+  const occupancySeries =
+    occupancyView === "percent"
+      ? [
+          {
+            key: "percent_ocupacao",
+            label: "% Ocupação",
+            color: "#199e70",
+            formatValue: formatPercent,
+            formatAxis: formatAxisPercent,
+          },
+        ]
+      : [
+          {
+            key: "drivers_confirmados",
+            label: "Confirmação em D-1 (abs.)",
+            color: "#199e70",
+            formatValue: (value: number) =>
+              value.toLocaleString("pt-BR"),
+            formatAxis: formatK,
+          },
+        ];
 
-  const countSeries = [
-    {
-      key: "drivers_confirmados",
-      label: "Confirmação em D-1",
-      color: "#3987e5",
-      formatValue: (value: number) =>
-        value.toLocaleString("pt-BR"),
-      formatAxis: formatK,
-    },
-    {
-      key: "rejeite_ativo_absoluto",
-      label: "Rejeite Ativo (abs.)",
-      color: "#d95926",
-      formatValue: formatK,
-      formatAxis: formatK,
-    },
-  ];
+  const rejectionSeries =
+    rejectionView === "percent"
+      ? [
+          {
+            key: "percent_rejeite_ativo",
+            label: "% Rejeite Ativo",
+            color: "#d95926",
+            formatValue: formatPercent,
+            formatAxis: formatAxisPercent,
+          },
+        ]
+      : [
+          {
+            key: "rejeite_ativo_absoluto",
+            label: "Rejeite Ativo (abs.)",
+            color: "#d95926",
+            formatValue: (value: number) =>
+              value.toLocaleString("pt-BR"),
+            formatAxis: formatK,
+          },
+        ];
+
+  // botões "%" / "Abs." exibidos no cabeçalho de cada gráfico
+  const renderViewToggle = (
+    view: DriverChartView,
+    setView: (view: DriverChartView) => void
+  ) => (
+    <div className="bau-chart-controls bau-chart-controls--header">
+      <button
+        className={
+          view === "percent" ? "active" : ""
+        }
+        onClick={() => setView("percent")}
+      >
+        %
+      </button>
+
+      <button
+        className={view === "abs" ? "active" : ""}
+        onClick={() => setView("abs")}
+      >
+        Abs.
+      </button>
+    </div>
+  );
 
   // ============================================================
   // RENDER
@@ -1441,14 +1478,11 @@ function BAU() {
                         ? "active"
                         : ""
                     }
-                    onClick={() => {
+                    onClick={() =>
                       setGranularity(
                         "daily"
-                      );
-                      setHoveredPoint(
-                        null
-                      );
-                    }}
+                      )
+                    }
                   >
                     Diário
                   </button>
@@ -1460,14 +1494,11 @@ function BAU() {
                         ? "active"
                         : ""
                     }
-                    onClick={() => {
+                    onClick={() =>
                       setGranularity(
                         "weekly"
-                      );
-                      setHoveredPoint(
-                        null
-                      );
-                    }}
+                      )
+                    }
                   >
                     Semanal
                   </button>
@@ -1479,14 +1510,11 @@ function BAU() {
                         ? "active"
                         : ""
                     }
-                    onClick={() => {
+                    onClick={() =>
                       setGranularity(
                         "monthly"
-                      );
-                      setHoveredPoint(
-                        null
-                      );
-                    }}
+                      )
+                    }
                   >
                     Mensal
                   </button>
@@ -1907,7 +1935,8 @@ function BAU() {
                     </div>
 
                     {/* =========================================
-                        GRÁFICO
+                        GRÁFICOS — ATs NO PISO E
+                        ATs (QTY_AT_DELIVERING)
                     ========================================= */}
 
                     {selectedKpis.length ===
@@ -1930,490 +1959,37 @@ function BAU() {
 
                     {selectedKpis.length >
                       0 && (
-                    <section className="bau-chart-card">
+                      <div className="bau-chart-row">
 
-                      {/* =======================================
-                          HEADER DO GRÁFICO
-                      ======================================= */}
+                        <DriversBarChart
+                          title="ATs no piso"
+                          description="Quantidade de ATs no piso ao longo do período selecionado."
+                          icon={
+                            <TrendingUp size={20} />
+                          }
+                          data={atNoPisoChartData}
+                          series={atNoPisoSeries}
+                          formatPeriodLabel={
+                            formatPeriodLabel
+                          }
+                          showValueLabels
+                        />
 
-                      <div className="bau-card-header">
-
-                        <div>
-
-                          <h2>
-                            ATs no piso —
-                            Evolução
-                          </h2>
-
-                          <p>
-                            Evolução do
-                            indicador ao
-                            longo do período
-                            selecionado.
-                          </p>
-
-                        </div>
-
-                        <div className="bau-chart-icon">
-
-                          <TrendingUp
-                            size={20}
-                          />
-
-                        </div>
+                        <DriversBarChart
+                          title="ATs (qty_at_delivering)"
+                          description="Quantidade total de ATs delivering ao longo do período selecionado."
+                          icon={
+                            <TrendingUp size={20} />
+                          }
+                          data={atDeliveringChartData}
+                          series={atDeliveringSeries}
+                          formatPeriodLabel={
+                            formatPeriodLabel
+                          }
+                          showValueLabels
+                        />
 
                       </div>
-
-                      {/* =======================================
-                          GRÁFICO
-                      ======================================= */}
-
-                      {chartData.length ===
-                      0 ? (
-
-                        <div className="bau-chart-placeholder">
-
-                          <strong>
-                            Nenhum dado
-                            encontrado
-                          </strong>
-
-                          <span>
-                            Ajuste os filtros
-                            selecionados.
-                          </span>
-
-                        </div>
-
-                      ) : (
-
-                        <div
-                          className="bau-line-chart"
-                          ref={
-                            lineChartContainerRef
-                          }
-                        >
-
-                          <svg
-                            viewBox={`0 0 ${lineChartWidth} ${lineChartHeight}`}
-                            className="bau-line-chart-svg"
-                            preserveAspectRatio="none"
-                          >
-
-                            {/* =================================
-                                GRID + EIXO Y
-                                (posições calculadas a partir do
-                                tamanho real do gráfico — não mais
-                                fixas em "1000x400", senão a grade
-                                e as labels não acompanham o
-                                viewBox dinâmico)
-                            ================================= */}
-
-                            {[
-                              0,
-                              0.25,
-                              0.5,
-                              0.75,
-                              1,
-                            ].map((tick) => {
-                              const chartHeight =
-                                lineChartHeight -
-                                40 -
-                                50;
-
-                              const y =
-                                40 +
-                                chartHeight *
-                                  (1 - tick);
-
-                              return (
-                                <line
-                                  key={`grid-${tick}`}
-                                  x1={70}
-                                  y1={y}
-                                  x2={
-                                    lineChartWidth -
-                                    30
-                                  }
-                                  y2={y}
-                                  className={
-                                    tick === 0
-                                      ? "chart-axis-line"
-                                      : "chart-grid-line"
-                                  }
-                                />
-                              );
-                            })}
-
-                            {[
-                              0,
-                              0.25,
-                              0.5,
-                              0.75,
-                              1,
-                            ].map((tick) => {
-                              const chartHeight =
-                                lineChartHeight -
-                                40 -
-                                50;
-
-                              const y =
-                                40 +
-                                chartHeight *
-                                  (1 - tick);
-
-                              return (
-                                <text
-                                  key={`y-${tick}`}
-                                  x={58}
-                                  y={y + 4}
-                                  textAnchor="end"
-                                  className="chart-axis-label"
-                                >
-                                  {Math.round(
-                                    chartMaxValue *
-                                      tick
-                                  ).toLocaleString(
-                                    "pt-BR"
-                                  )}
-                                </text>
-                              );
-                            })}
-
-                            {/* =================================
-                                LINHA PRINCIPAL
-                            ================================= */}
-
-                            <polyline
-                              points={
-                                chartPoints
-                              }
-                              fill="none"
-                              className="bau-chart-line"
-                            />
-
-                            {/* =================================
-                                ÁREAS DE HOVER
-                            ================================= */}
-
-                            {chartData.map(
-                              (
-                                item,
-                                index
-                              ) => {
-
-                                const width =
-                                  lineChartWidth;
-
-                                const height =
-                                  lineChartHeight;
-
-                                const paddingLeft =
-                                  70;
-
-                                const paddingRight =
-                                  30;
-
-                                const paddingTop =
-                                  40;
-
-                                const paddingBottom =
-                                  50;
-
-                                const chartWidth =
-                                  width -
-                                  paddingLeft -
-                                  paddingRight;
-
-                                const chartHeight =
-                                  height -
-                                  paddingTop -
-                                  paddingBottom;
-
-                                const x =
-                                  chartData.length ===
-                                  1
-                                    ? width /
-                                      2
-                                    : paddingLeft +
-                                      (index /
-                                        (chartData.length -
-                                          1)) *
-                                        chartWidth;
-
-                                const y =
-                                  paddingTop +
-                                  chartHeight -
-                                  (item.at_no_piso /
-                                    chartMaxValue) *
-                                    chartHeight;
-
-                                return (
-                                  <circle
-                                    key={`${item.period}-${index}`}
-                                    cx={x}
-                                    cy={y}
-                                    r="9"
-                                    className="chart-hover-area"
-                                    onMouseEnter={() =>
-                                      setHoveredPoint(
-                                        {
-                                          index,
-                                          x,
-                                          y,
-                                        }
-                                      )
-                                    }
-                                    onMouseLeave={() =>
-                                      setHoveredPoint(
-                                        null
-                                      )
-                                    }
-                                  />
-                                );
-
-                              }
-                            )}
-
-                            {/* =================================
-                                TOOLTIP
-                            ================================= */}
-
-                            {hoveredPoint &&
-                              hoveredTooltip && (
-
-                              <g
-                                className="chart-tooltip"
-                                pointerEvents="none"
-                              >
-
-                                {/* Linha vertical */}
-
-                                <line
-                                  x1={
-                                    hoveredPoint.x
-                                  }
-                                  y1="40"
-                                  x2={
-                                    hoveredPoint.x
-                                  }
-                                  y2="350"
-                                  className="chart-tooltip-line"
-                                />
-
-                                {/* Ponto destacado */}
-
-                                <circle
-                                  cx={
-                                    hoveredPoint.x
-                                  }
-                                  cy={
-                                    hoveredPoint.y
-                                  }
-                                  r="5"
-                                  className="chart-tooltip-point"
-                                />
-
-                                {/* Caixa do tooltip */}
-
-                                <rect
-                                  x={Math.min(
-                                    hoveredPoint.x +
-                                      14,
-                                    795
-                                  )}
-                                  y={Math.max(
-                                    hoveredPoint.y -
-                                      96,
-                                    10
-                                  )}
-                                  width="185"
-                                  height="96"
-                                  rx="10"
-                                  className="chart-tooltip-box"
-                                />
-
-                                {/* Data */}
-
-                                <text
-                                  x={Math.min(
-                                    hoveredPoint.x +
-                                      26,
-                                    807
-                                  )}
-                                  y={Math.max(
-                                    hoveredPoint.y -
-                                      73,
-                                    33
-                                  )}
-                                  className="chart-tooltip-date"
-                                >
-                                  {formatDate(
-                                    hoveredTooltip
-                                      .item
-                                      .period
-                                  )}
-                                </text>
-
-                                {/* Nome do KPI */}
-
-                                <text
-                                  x={Math.min(
-                                    hoveredPoint.x +
-                                      26,
-                                    807
-                                  )}
-                                  y={Math.max(
-                                    hoveredPoint.y -
-                                      54,
-                                    52
-                                  )}
-                                  className="chart-tooltip-name"
-                                >
-                                  ATs no piso
-                                </text>
-
-                                {/* Valor */}
-
-                                <text
-                                  x={Math.min(
-                                    hoveredPoint.x +
-                                      26,
-                                    807
-                                  )}
-                                  y={Math.max(
-                                    hoveredPoint.y -
-                                      32,
-                                    74
-                                  )}
-                                  className="chart-tooltip-value"
-                                >
-                                  {hoveredTooltip.item.at_no_piso.toLocaleString(
-                                    "pt-BR"
-                                  )}{" "}
-                                  ATs
-                                </text>
-
-                                {/* Percentual */}
-
-                                <text
-                                  x={Math.min(
-                                    hoveredPoint.x +
-                                      26,
-                                    807
-                                  )}
-                                  y={Math.max(
-                                    hoveredPoint.y -
-                                      10,
-                                    96
-                                  )}
-                                  className="chart-tooltip-percent"
-                                >
-                                  {hoveredTooltip.percent.toLocaleString(
-                                    "pt-BR",
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )}
-                                  % no piso
-                                </text>
-
-                              </g>
-
-                            )}
-
-                            {/* =================================
-                                EIXO X
-                            ================================= */}
-
-                            {chartData.map(
-                              (
-                                item,
-                                index
-                              ) => {
-
-                                const isFirst =
-                                  index ===
-                                  0;
-
-                                const isLast =
-                                  index ===
-                                  chartData.length -
-                                    1;
-
-                                const showLabel =
-                                  chartData.length <=
-                                    10 ||
-                                  isFirst ||
-                                  isLast ||
-                                  index %
-                                    xLabelInterval ===
-                                    0;
-
-                                if (
-                                  !showLabel
-                                ) {
-                                  return null;
-                                }
-
-                                const width =
-                                  lineChartWidth;
-
-                                const paddingLeft =
-                                  70;
-
-                                const paddingRight =
-                                  30;
-
-                                const chartWidth =
-                                  width -
-                                  paddingLeft -
-                                  paddingRight;
-
-                                const x =
-                                  chartData.length ===
-                                  1
-                                    ? width /
-                                      2
-                                    : paddingLeft +
-                                      (index /
-                                        (chartData.length -
-                                          1)) *
-                                        chartWidth;
-
-                                const label =
-                                  granularity ===
-                                  "monthly"
-                                    ? item.period
-                                    : formatDate(
-                                        item.period
-                                      );
-
-                                return (
-                                  <text
-                                    key={`x-${item.period}-${index}`}
-                                    x={x}
-                                    y="380"
-                                    textAnchor="middle"
-                                    className="chart-axis-label"
-                                  >
-                                    {
-                                      label
-                                    }
-                                  </text>
-                                );
-
-                              }
-                            )}
-
-                          </svg>
-
-                        </div>
-
-                      )}
-
-                    </section>
                     )}
 
                     {/* =========================================
@@ -2476,7 +2052,7 @@ function BAU() {
                       ) && (
                         <SprGapChart
                           title="SPR Delivering x Route"
-                          description="Comparação entre SPR Delivering e SPR Route por período, com o GAP (Delivering − Route) destacado."
+                          description="SPR Delivering x SPR Route por período (em cima) e o GAP (Delivering − Route) com escala própria (embaixo)."
                           icon={
                             <BarChart3
                               size={20}
@@ -2535,12 +2111,9 @@ function BAU() {
                               selecionado
                             </strong>
                             <span>
-                              Selecione "Ocupação
-                              e Rejeite Ativo
-                              (%)" ou
-                              "Confirmação D-1 e
-                              Rejeite (abs.)" no
-                              painel de KPIs.
+                              Selecione "Ocupação"
+                              ou "Rejeite Ativo"
+                              no painel de KPIs.
                             </span>
                           </div>
                         </section>
@@ -2552,8 +2125,21 @@ function BAU() {
                         "occupancy"
                       ) && (
                         <DriversBarChart
-                          title="Ocupação e Rejeite Ativo (%)"
-                          description="% de ocupação (drivers ativos / confirmados + não confirmados) e % de rejeite ativo (rejeites, exceto timeout, / call ups declinados)."
+                          title={
+                            occupancyView === "percent"
+                              ? "Ocupação (%)"
+                              : "Ocupação (abs.)"
+                          }
+                          description={
+                            occupancyView === "percent"
+                              ? "% de ocupação (drivers ativos / confirmados + não confirmados)."
+                              : "Drivers confirmados no D-1."
+                          }
+                          headerActions={renderViewToggle(
+                            occupancyView,
+                            setOccupancyView
+                          )}
+                          showValueLabels
                           icon={
                             <Percent
                               size={20}
@@ -2574,21 +2160,34 @@ function BAU() {
                     {!driversLoading &&
                       !driversError &&
                       selectedDriverCharts.includes(
-                        "confirmation"
+                        "rejection"
                       ) && (
                         <DriversBarChart
-                          title="Confirmação D-1 e Rejeite Ativo (absoluto)"
-                          description="Drivers confirmados no D-1 e volume absoluto de rejeite ativo (call ups declinados - timeout)."
+                          title={
+                            rejectionView === "percent"
+                              ? "Rejeite Ativo (%)"
+                              : "Rejeite Ativo (abs.)"
+                          }
+                          description={
+                            rejectionView === "percent"
+                              ? "% de rejeite ativo (rejeites, exceto timeout, / call ups declinados)."
+                              : "Volume absoluto de rejeite ativo (call ups declinados - timeout)."
+                          }
+                          headerActions={renderViewToggle(
+                            rejectionView,
+                            setRejectionView
+                          )}
+                          showValueLabels
                           icon={
                             <Users
                               size={20}
                             />
                           }
                           data={
-                            countChartData
+                            rejectionChartData
                           }
                           series={
-                            countSeries
+                            rejectionSeries
                           }
                           formatPeriodLabel={
                             formatPeriodLabel
@@ -2618,14 +2217,49 @@ function BAU() {
 
                         </div>
 
-                        <div className="bau-table-count">
+                        <div className="bau-table-header-actions">
 
-                          {
-                            atNoPisoByStationData.length
-                          }{" "}
-                          linhas · página{" "}
-                          {tablePage + 1} de{" "}
-                          {tableTotalPages}
+                          <div className="bau-table-count">
+
+                            {
+                              atNoPisoByStationData.length
+                            }{" "}
+                            linhas · página{" "}
+                            {tablePage + 1} de{" "}
+                            {tableTotalPages}
+
+                          </div>
+
+                          {/* DOWNLOAD (todas as linhas
+                              filtradas, não só a página) */}
+
+                          <button
+                            type="button"
+                            className="bau-download-button"
+                            onClick={handleDownloadXlsx}
+                            disabled={
+                              atNoPisoByStationData.length ===
+                              0
+                            }
+                            title="Baixar todas as linhas filtradas em Excel (.xlsx)"
+                          >
+                            <Download size={14} />
+                            XLSX
+                          </button>
+
+                          <button
+                            type="button"
+                            className="bau-download-button"
+                            onClick={handleDownloadCsv}
+                            disabled={
+                              atNoPisoByStationData.length ===
+                              0
+                            }
+                            title="Baixar todas as linhas filtradas em CSV"
+                          >
+                            <Download size={14} />
+                            CSV
+                          </button>
 
                         </div>
 
