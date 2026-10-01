@@ -16,7 +16,6 @@ import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
 
 
-import { bauKpis } from "./bauKpis";
 
 import {
   downloadCsv,
@@ -182,51 +181,71 @@ function getDefaultDateRange() {
   };
 }
 
-// gráficos de drivers que aparecem como opção no painel de
-// KPIs à esquerda — selecionar/desmarcar mostra ou esconde o
-// gráfico correspondente lá embaixo
-interface DriverChartOption {
-  id: string;
-  name: string;
-  description: string;
+// ============================================================
+// EIXO DE PERÍODOS COMUM A TODOS OS GRÁFICOS
+//
+// Cada planilha (ATs, drivers, SPR) é atualizada num ritmo
+// diferente, então a API pode devolver datas diferentes pra cada
+// uma (ex.: ATs até 16/09, SPR até 24/09). Pra todos os gráficos
+// terem sempre o mesmo eixo X, montamos a lista de períodos a partir
+// do filtro de datas (data inicial → data final) e cada gráfico
+// preenche com o que tiver; dia sem dado aparece vazio.
+// ============================================================
+
+function addDaysIso(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00Z`);
+
+  date.setUTCDate(date.getUTCDate() + days);
+
+  return date.toISOString().slice(0, 10);
 }
 
-const driverChartOptions: DriverChartOption[] = [
-  {
-    id: "occupancy",
-    name: "Ocupação",
-    description:
-      "% de ocupação ou drivers confirmados no D-1 (abs.), por período.",
-  },
-  {
-    id: "rejection",
-    name: "Rejeite Ativo",
-    description:
-      "% de rejeite ativo ou volume absoluto de rejeite ativo, por período.",
-  },
-];
+// segunda-feira da semana (mesma regra do backend)
+function weekStartIso(iso: string): string {
+  const day = new Date(`${iso}T00:00:00Z`).getUTCDay();
+
+  return addDaysIso(iso, day === 0 ? -6 : 1 - day);
+}
+
+function buildPeriodAxis(
+  startDate: string,
+  endDate: string,
+  granularity: Granularity
+): string[] {
+  const isoPattern = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (
+    !isoPattern.test(startDate) ||
+    !isoPattern.test(endDate) ||
+    startDate > endDate
+  ) {
+    return [];
+  }
+
+  const periods = new Set<string>();
+
+  // limite de segurança (~5 anos de dias)
+  let current = startDate;
+
+  for (let i = 0; current <= endDate && i < 2000; i++) {
+    if (granularity === "daily") {
+      periods.add(current);
+    } else if (granularity === "weekly") {
+      periods.add(weekStartIso(current));
+    } else {
+      periods.add(current.slice(0, 7));
+    }
+
+    current = addDaysIso(current, 1);
+  }
+
+  return Array.from(periods);
+}
 
 // visão exibida dentro de cada gráfico de drivers:
 // percentual ou absoluto (um ou outro, nunca os dois juntos —
 // assim cada gráfico tem uma escala só)
 type DriverChartView = "percent" | "abs";
-
-// gráfico de SPR (Delivering x Route) — mesmo padrão de seleção
-// dos gráficos de drivers acima
-interface SprChartOption {
-  id: string;
-  name: string;
-  description: string;
-}
-
-const sprChartOptions: SprChartOption[] = [
-  {
-    id: "spr_gap",
-    name: "SPR Delivering x Route",
-    description:
-      "Comparação entre SPR Delivering e SPR Route, com o GAP (Delivering − Route) por período.",
-  },
-];
 
 function BAU() {
   // ============================================================
@@ -341,28 +360,8 @@ function BAU() {
   );
 
   // ============================================================
-  // KPI SELECIONADO
+  // VISÃO DOS GRÁFICOS DE DRIVERS (% OU ABS.)
   // ============================================================
-
-  const [selectedKpis, setSelectedKpis] =
-    useState<string[]>([
-      "at_no_piso",
-      "percent_at_no_piso",
-    ]);
-
-  // ============================================================
-  // GRÁFICOS DE DRIVERS SELECIONADOS
-  // (mesmo painel de KPIs à esquerda também deixa escolher quais
-  // dos dois gráficos de drivers aparecem na tela)
-  // ============================================================
-
-  const [
-    selectedDriverCharts,
-    setSelectedDriverCharts,
-  ] = useState<string[]>([
-    "occupancy",
-    "rejection",
-  ]);
 
   // visão (% ou abs.) selecionada em cada gráfico de drivers
   const [occupancyView, setOccupancyView] =
@@ -370,17 +369,6 @@ function BAU() {
 
   const [rejectionView, setRejectionView] =
     useState<DriverChartView>("percent");
-
-  // ============================================================
-  // GRÁFICO DE SPR SELECIONADO
-  // (mesmo painel de KPIs à esquerda também deixa escolher se o
-  // gráfico de SPR aparece na tela)
-  // ============================================================
-
-  const [
-    selectedSprCharts,
-    setSelectedSprCharts,
-  ] = useState<string[]>(["spr_gap"]);
 
   // ============================================================
   // GRANULARIDADE
@@ -784,6 +772,67 @@ function BAU() {
   ]);
 
   // ============================================================
+  // EIXO DE PERÍODOS COMUM (ver buildPeriodAxis)
+  // ============================================================
+
+  const chartPeriods = useMemo(() => {
+    const fromFilter = buildPeriodAxis(
+      startDate,
+      endDate,
+      granularity
+    );
+
+    // sem filtro de data completo, usa as datas que vieram da API
+    // (juntando as três fontes)
+    const all = new Set<string>(fromFilter);
+
+    if (!fromFilter.length) {
+      [...chartData, ...driversChartData, ...sprChartData].forEach(
+        (item) => all.add(item.period)
+      );
+    }
+
+    return Array.from(all).sort();
+  }, [
+    startDate,
+    endDate,
+    granularity,
+    chartData,
+    driversChartData,
+    sprChartData,
+  ]);
+
+  const atsByPeriod = useMemo(
+    () => new Map(chartData.map((item) => [item.period, item])),
+    [chartData]
+  );
+
+  const driversByPeriod = useMemo(
+    () =>
+      new Map(
+        driversChartData.map((item) => [item.period, item])
+      ),
+    [driversChartData]
+  );
+
+  const sprAlignedData: SprChartDatum[] = useMemo(() => {
+    const byPeriod = new Map(
+      sprChartData.map((item) => [item.period, item])
+    );
+
+    return chartPeriods.map((period) => {
+      const item = byPeriod.get(period);
+
+      return {
+        period,
+        spr_delivering: item ? item.spr_delivering : null,
+        spr_route: item ? item.spr_route : null,
+        gap: item ? item.gap : null,
+      };
+    });
+  }, [chartPeriods, sprChartData]);
+
+  // ============================================================
   // DADOS DA TABELA "DETALHAMENTO" — UMA LINHA POR ESTAÇÃO
   // POR PERÍODO (os gráficos acima continuam usando os totais
   // somados de apiData/driversData, sem alteração)
@@ -1023,31 +1072,43 @@ function BAU() {
   const occupancyChartData: BarChartDatum[] =
     useMemo(
       () =>
-        driversChartData.map((item) => ({
-          period: item.period,
-          values: {
-            percent_ocupacao:
-              item.percent_ocupacao,
-            drivers_confirmados:
-              item.drivers_confirmados,
-          },
-        })),
-      [driversChartData]
+        chartPeriods.map((period) => {
+          const item = driversByPeriod.get(period);
+
+          return {
+            period,
+            values: item
+              ? {
+                  percent_ocupacao:
+                    item.percent_ocupacao,
+                  drivers_confirmados:
+                    item.drivers_confirmados,
+                }
+              : ({} as Record<string, number>),
+          };
+        }),
+      [chartPeriods, driversByPeriod]
     );
 
   const rejectionChartData: BarChartDatum[] =
     useMemo(
       () =>
-        driversChartData.map((item) => ({
-          period: item.period,
-          values: {
-            percent_rejeite_ativo:
-              item.percent_rejeite_ativo,
-            rejeite_ativo_absoluto:
-              item.rejeite_ativo_absoluto,
-          },
-        })),
-      [driversChartData]
+        chartPeriods.map((period) => {
+          const item = driversByPeriod.get(period);
+
+          return {
+            period,
+            values: item
+              ? {
+                  percent_rejeite_ativo:
+                    item.percent_rejeite_ativo,
+                  rejeite_ativo_absoluto:
+                    item.rejeite_ativo_absoluto,
+                }
+              : ({} as Record<string, number>),
+          };
+        }),
+      [chartPeriods, driversByPeriod]
     );
 
   // ============================================================
@@ -1056,24 +1117,30 @@ function BAU() {
 
   const atNoPisoChartData: BarChartDatum[] = useMemo(
     () =>
-      chartData.map((item) => ({
-        period: item.period,
-        values: {
-          at_no_piso: item.at_no_piso,
-        },
-      })),
-    [chartData]
+      chartPeriods.map((period) => {
+        const item = atsByPeriod.get(period);
+
+        return {
+          period,
+          values: item ? { at_no_piso: item.at_no_piso } : ({} as Record<string, number>),
+        };
+      }),
+    [chartPeriods, atsByPeriod]
   );
 
   const atDeliveringChartData: BarChartDatum[] = useMemo(
     () =>
-      chartData.map((item) => ({
-        period: item.period,
-        values: {
-          qty_at_delivering: item.qty_at_delivering,
-        },
-      })),
-    [chartData]
+      chartPeriods.map((period) => {
+        const item = atsByPeriod.get(period);
+
+        return {
+          period,
+          values: item
+            ? { qty_at_delivering: item.qty_at_delivering }
+            : ({} as Record<string, number>),
+        };
+      }),
+    [chartPeriods, atsByPeriod]
   );
 
   const atNoPisoSeries = [
@@ -1097,76 +1164,6 @@ function BAU() {
       formatAxis: formatK,
     },
   ];
-
-  // ============================================================
-  // SELEÇÃO DE KPI
-  // ============================================================
-
-  const toggleKpi = (
-    kpiId: string
-  ) => {
-    setSelectedKpis(
-      (current) => {
-        if (
-          current.includes(kpiId)
-        ) {
-          return current.filter(
-            (id) =>
-              id !== kpiId
-          );
-        }
-
-        return [
-          ...current,
-          kpiId,
-        ];
-      }
-    );
-  };
-
-  const toggleDriverChart = (
-    chartId: string
-  ) => {
-    setSelectedDriverCharts(
-      (current) => {
-        if (
-          current.includes(chartId)
-        ) {
-          return current.filter(
-            (id) =>
-              id !== chartId
-          );
-        }
-
-        return [
-          ...current,
-          chartId,
-        ];
-      }
-    );
-  };
-
-  const toggleSprChart = (
-    chartId: string
-  ) => {
-    setSelectedSprCharts(
-      (current) => {
-        if (
-          current.includes(chartId)
-        ) {
-          return current.filter(
-            (id) =>
-              id !== chartId
-          );
-        }
-
-        return [
-          ...current,
-          chartId,
-        ];
-      }
-    );
-  };
 
   // ============================================================
   // FORMATAÇÃO DE DATA
@@ -1330,15 +1327,38 @@ function BAU() {
 
           <section className="bau-filters">
 
-            <div className="bau-section-title">
+            {/* título à esquerda e "Limpar filtros" à direita — a
+                grade abaixo fica só com os campos, e quebra em
+                novas linhas conforme mais filtros forem entrando */}
 
-              <Filter
-                size={18}
-              />
+            <div className="bau-filters-header">
 
-              <span>
-                Filtros
-              </span>
+              <div className="bau-section-title">
+
+                <Filter
+                  size={18}
+                />
+
+                <span>
+                  Filtros
+                </span>
+
+              </div>
+
+              <button
+                className="bau-reset-button"
+                onClick={
+                  resetFilters
+                }
+              >
+
+                <RotateCcw
+                  size={16}
+                />
+
+                Limpar filtros
+
+              </button>
 
             </div>
 
@@ -1463,7 +1483,7 @@ function BAU() {
 
               {/* PERÍODO (GRANULARIDADE) */}
 
-              <div className="bau-filter">
+              <div className="bau-filter bau-filter--period">
 
                 <label>
                   Período
@@ -1575,22 +1595,6 @@ function BAU() {
 
               </div>
 
-              {/* RESET */}
-
-              <button
-                className="bau-reset-button"
-                onClick={
-                  resetFilters
-                }
-              >
-
-                <RotateCcw
-                  size={16}
-                />
-
-                Limpar filtros
-
-              </button>
 
             </div>
 
@@ -1601,180 +1605,6 @@ function BAU() {
           ================================================== */}
 
           <section className="bau-dashboard-grid">
-
-            {/* =================================================
-                PAINEL LATERAL DE KPIs
-            ================================================= */}
-
-            <aside className="bau-kpi-panel">
-
-              <div className="bau-section-title">
-
-                <TrendingUp
-                  size={18}
-                />
-
-                <span>
-                  KPIs
-                </span>
-
-              </div>
-
-              <p className="bau-kpi-help">
-                Selecione um ou mais
-                indicadores.
-              </p>
-
-              <div className="bau-kpi-list">
-
-                {bauKpis.map(
-                  (kpi) => {
-
-                    const isSelected =
-                      selectedKpis.includes(
-                        kpi.id
-                      );
-
-                    return (
-                      <button
-                        key={
-                          kpi.id
-                        }
-                        className={`bau-kpi-item ${
-                          isSelected
-                            ? "selected"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          toggleKpi(
-                            kpi.id
-                          )
-                        }
-                      >
-
-                        <div className="bau-kpi-item-name">
-                          {
-                            kpi.name
-                          }
-                        </div>
-
-                        <div className="bau-kpi-item-description">
-                          {
-                            kpi.description
-                          }
-                        </div>
-
-                      </button>
-                    );
-
-                  }
-                )}
-
-              </div>
-
-              <p className="bau-kpi-help bau-kpi-subheading">
-                Gráfico de SPR
-              </p>
-
-              <div className="bau-kpi-list">
-
-                {sprChartOptions.map(
-                  (option) => {
-
-                    const isSelected =
-                      selectedSprCharts.includes(
-                        option.id
-                      );
-
-                    return (
-                      <button
-                        key={
-                          option.id
-                        }
-                        className={`bau-kpi-item ${
-                          isSelected
-                            ? "selected"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          toggleSprChart(
-                            option.id
-                          )
-                        }
-                      >
-
-                        <div className="bau-kpi-item-name">
-                          {
-                            option.name
-                          }
-                        </div>
-
-                        <div className="bau-kpi-item-description">
-                          {
-                            option.description
-                          }
-                        </div>
-
-                      </button>
-                    );
-
-                  }
-                )}
-
-              </div>
-
-              <p className="bau-kpi-help bau-kpi-subheading">
-                Gráficos de drivers
-              </p>
-
-              <div className="bau-kpi-list">
-
-                {driverChartOptions.map(
-                  (option) => {
-
-                    const isSelected =
-                      selectedDriverCharts.includes(
-                        option.id
-                      );
-
-                    return (
-                      <button
-                        key={
-                          option.id
-                        }
-                        className={`bau-kpi-item ${
-                          isSelected
-                            ? "selected"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          toggleDriverChart(
-                            option.id
-                          )
-                        }
-                      >
-
-                        <div className="bau-kpi-item-name">
-                          {
-                            option.name
-                          }
-                        </div>
-
-                        <div className="bau-kpi-item-description">
-                          {
-                            option.description
-                          }
-                        </div>
-
-                      </button>
-                    );
-
-                  }
-                )}
-
-              </div>
-
-            </aside>
 
             {/* =================================================
                 RESULTADOS
@@ -1844,122 +1674,12 @@ function BAU() {
                   <>
 
                     {/* =========================================
-                        SUMMARY
-                    ========================================= */}
-
-                    <div className="bau-summary-grid">
-
-                      {selectedKpis.map(
-                        (kpiId) => {
-
-                          const kpi =
-                            bauKpis.find(
-                              (
-                                item
-                              ) =>
-                                item.id ===
-                                kpiId
-                            );
-
-                          if (!kpi) {
-                            return null;
-                          }
-
-                          let value =
-                            0;
-
-                          if (
-                            kpi.dataKey ===
-                            "at_no_piso"
-                          ) {
-                            value =
-                              apiData
-                                .summary
-                                .at_no_piso;
-                          } else if (
-                            kpi.dataKey ===
-                            "percent_at_no_piso"
-                          ) {
-                            value =
-                              apiData
-                                .summary
-                                .percent_at_no_piso;
-                          }
-
-                          const formattedValue =
-                            kpi.dataKey ===
-                            "percent_at_no_piso"
-                              ? value.toLocaleString(
-                                  "pt-BR",
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
-                                )
-                              : value.toLocaleString(
-                                  "pt-BR"
-                                );
-
-                          return (
-                            <div
-                              className="bau-summary-card"
-                              key={
-                                kpi.id
-                              }
-                            >
-
-                              <div className="bau-summary-label">
-                                {
-                                  kpi.name
-                                }
-                              </div>
-
-                              <div className="bau-summary-value">
-                                {
-                                  formattedValue
-                                }
-                              </div>
-
-                              <div className="bau-summary-unit">
-                                {
-                                  kpi.unit
-                                }
-                              </div>
-
-                            </div>
-                          );
-
-                        }
-                      )}
-
-                    </div>
-
-                    {/* =========================================
                         GRÁFICOS — ATs NO PISO E
                         ATs (QTY_AT_DELIVERING)
                     ========================================= */}
 
-                    {selectedKpis.length ===
-                      0 && (
-                      <section className="bau-chart-card">
-                        <div className="bau-chart-placeholder">
-                          <strong>
-                            Nenhum indicador
-                            selecionado
-                          </strong>
-                          <span>
-                            Selecione "ATs no
-                            piso" ou "% ATs no
-                            piso" no painel de
-                            KPIs.
-                          </span>
-                        </div>
-                      </section>
-                    )}
 
-                    {selectedKpis.length >
-                      0 && (
-                      <div className="bau-chart-row">
+                    <div className="bau-chart-row">
 
                         <DriversBarChart
                           title="ATs no piso"
@@ -1990,7 +1710,6 @@ function BAU() {
                         />
 
                       </div>
-                    )}
 
                     {/* =========================================
                         SPR — DELIVERING X ROUTE (GAP)
@@ -2025,31 +1744,9 @@ function BAU() {
                         </section>
                       )}
 
-                    {!sprLoading &&
-                      !sprError &&
-                      !selectedSprCharts.includes(
-                        "spr_gap"
-                      ) && (
-                        <section className="bau-chart-card">
-                          <div className="bau-chart-placeholder">
-                            <strong>
-                              Nenhum gráfico
-                              selecionado
-                            </strong>
-                            <span>
-                              Selecione "SPR
-                              Delivering x Route"
-                              no painel de KPIs.
-                            </span>
-                          </div>
-                        </section>
-                      )}
 
                     {!sprLoading &&
-                      !sprError &&
-                      selectedSprCharts.includes(
-                        "spr_gap"
-                      ) && (
+                      !sprError && (
                         <SprGapChart
                           title="SPR Delivering x Route"
                           description="SPR Delivering x SPR Route por período (em cima) e o GAP (Delivering − Route) com escala própria (embaixo)."
@@ -2059,7 +1756,7 @@ function BAU() {
                             />
                           }
                           data={
-                            sprChartData as SprChartDatum[]
+                            sprAlignedData
                           }
                           formatPeriodLabel={
                             formatPeriodLabel
@@ -2100,30 +1797,9 @@ function BAU() {
                         </section>
                       )}
 
-                    {!driversLoading &&
-                      !driversError &&
-                      selectedDriverCharts.length ===
-                        0 && (
-                        <section className="bau-chart-card">
-                          <div className="bau-chart-placeholder">
-                            <strong>
-                              Nenhum gráfico
-                              selecionado
-                            </strong>
-                            <span>
-                              Selecione "Ocupação"
-                              ou "Rejeite Ativo"
-                              no painel de KPIs.
-                            </span>
-                          </div>
-                        </section>
-                      )}
 
                     {!driversLoading &&
-                      !driversError &&
-                      selectedDriverCharts.includes(
-                        "occupancy"
-                      ) && (
+                      !driversError && (
                         <DriversBarChart
                           title={
                             occupancyView === "percent"
@@ -2132,7 +1808,7 @@ function BAU() {
                           }
                           description={
                             occupancyView === "percent"
-                              ? "% de ocupação (drivers ativos / confirmados + não confirmados)."
+                              ? "% de ocupação = drivers ativos / (confirmados + não confirmados)."
                               : "Drivers confirmados no D-1."
                           }
                           headerActions={renderViewToggle(
@@ -2158,10 +1834,7 @@ function BAU() {
                       )}
 
                     {!driversLoading &&
-                      !driversError &&
-                      selectedDriverCharts.includes(
-                        "rejection"
-                      ) && (
+                      !driversError && (
                         <DriversBarChart
                           title={
                             rejectionView === "percent"

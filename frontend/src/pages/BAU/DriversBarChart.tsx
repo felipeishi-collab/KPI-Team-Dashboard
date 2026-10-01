@@ -193,7 +193,13 @@ function DriversBarChart({
         ))}
       </div>
 
-      {data.length === 0 ? (
+      {/* o eixo de datas é sempre o período do filtro, então
+          "sem dados" = nenhum período com valor */}
+      {!data.some((item) =>
+        series.some(
+          (config) => item.values[config.key] !== undefined
+        )
+      ) ? (
         <div className="bau-chart-placeholder">
           <strong>Nenhum dado encontrado</strong>
           <span>Ajuste os filtros selecionados.</span>
@@ -417,11 +423,15 @@ function DriversBarChart({
                       className="drivers-tooltip-value"
                     >
                       {config.label}:{" "}
-                      {config.formatValue(
-                        data[hoveredIndex].values[
-                          config.key
-                        ] ?? 0
-                      )}
+                      {data[hoveredIndex].values[
+                        config.key
+                      ] === undefined
+                        ? "sem dados"
+                        : config.formatValue(
+                            data[hoveredIndex].values[
+                              config.key
+                            ]
+                          )}
                     </text>
                   ))}
                 </g>
