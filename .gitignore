@@ -25,3 +25,5 @@ Thumbs.db
 .vscode/
 
 backend/kpis-team-dashboard-*.json
+backend/.cache/
+*.tsbuildinfo

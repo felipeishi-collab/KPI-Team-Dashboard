@@ -15,6 +15,7 @@ interface AtNoPisoFilters {
   station?: string;
   stationId?: string;
   stationName?: string;
+  dispatchWindow?: string;
 }
 
 interface AtNoPisoPeriod {
