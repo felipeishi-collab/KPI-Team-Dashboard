@@ -7,6 +7,7 @@ import {
 import Login from "../pages/Login/Login";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import BAU from "../pages/BAU/BAU";
+import Barometro from "../pages/Barometro/Barometro";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 function AppRoutes() {
@@ -42,6 +43,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <BAU />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/barometro"
+        element={
+          <ProtectedRoute>
+            <Barometro />
           </ProtectedRoute>
         }
       />

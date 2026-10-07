@@ -17,9 +17,12 @@ const sheets = google.sheets({
   auth,
 });
 
+// `unformatted: true` devolve os valores crus (números de verdade, datas
+// como serial) em vez do texto formatado exibido na célula.
 export async function getSheetData(
   range: string,
-  spreadsheetIdOverride?: string
+  spreadsheetIdOverride?: string,
+  unformatted = false
 ): Promise<string[][]> {
   const spreadsheetId =
     spreadsheetIdOverride ||
@@ -34,6 +37,9 @@ export async function getSheetData(
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range,
+    ...(unformatted
+      ? { valueRenderOption: "UNFORMATTED_VALUE" }
+      : {}),
   });
 
   return (response.data.values || []) as string[][];

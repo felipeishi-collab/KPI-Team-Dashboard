@@ -1,5 +1,6 @@
 import {
   Truck,
+  Gauge,
   MapPin,
   Warehouse,
   DollarSign,
@@ -22,6 +23,13 @@ const areas = [
       "Visão geral da operação, volumes, SLAs e performance.",
     icon: Truck,
     path: "/bau",
+  },
+  {
+    title: "Barômetro",
+    description:
+      "Indicadores por hub: volume, SPR, drivers, frota e pesquisa de satisfação.",
+    icon: Gauge,
+    path: "/barometro",
   },
 ];
 

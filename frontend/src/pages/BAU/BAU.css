@@ -1123,3 +1123,39 @@
   }
 
 }
+
+/* =========================================================
+   ROLAGEM HORIZONTAL DOS GRÁFICOS
+   ========================================================= */
+
+.bau-chart-scroll {
+  width: 100%;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding-bottom: 4px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--line-rgb), 0.45) transparent;
+}
+
+.bau-chart-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.bau-chart-scroll::-webkit-scrollbar-track {
+  background: rgba(var(--line-rgb), 0.08);
+
+  border-radius: 999px;
+}
+
+.bau-chart-scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--line-rgb), 0.4);
+
+  border-radius: 999px;
+}
+
+.bau-chart-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--orange);
+}

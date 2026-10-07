@@ -2,6 +2,7 @@ import {
   Home,
   Truck,
   BarChart3,
+  Gauge,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -27,6 +28,11 @@ const menuItems = [
     label: "BAU",
     path: "/bau",
     icon: Truck,
+  },
+  {
+    label: "Barômetro",
+    path: "/barometro",
+    icon: Gauge,
   },
 ];
 

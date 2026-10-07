@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { useContainerWidth } from "../../hooks/useContainerWidth";
+import { useScrollToEnd } from "../../hooks/useScrollToEnd";
+
+// largura mínima (px) por período: com muitos dias o gráfico passa a
+// rolar na horizontal em vez de espremer as barras
+const MIN_PERIOD_WIDTH = 34;
 
 // ============================================================
 // TIPOS
@@ -144,6 +149,15 @@ function DriversBarChart({
   const paddingTop = 40;
   const paddingBottom = 50;
 
+  const minChartWidth =
+    paddingLeft +
+    paddingRight +
+    data.length * MIN_PERIOD_WIDTH;
+
+  const scrollRef = useScrollToEnd<HTMLDivElement>(
+    data.length
+  );
+
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
 
@@ -205,9 +219,11 @@ function DriversBarChart({
           <span>Ajuste os filtros selecionados.</span>
         </div>
       ) : (
+        <div className="bau-chart-scroll" ref={scrollRef}>
         <div
           className="drivers-bar-chart"
           ref={containerRef}
+          style={{ minWidth: minChartWidth }}
         >
           <svg
             viewBox={`0 0 ${width} ${height}`}
@@ -472,6 +488,7 @@ function DriversBarChart({
               );
             })}
           </svg>
+        </div>
         </div>
       )}
     </section>

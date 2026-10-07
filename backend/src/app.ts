@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import fs from "fs";
 import path from "path";
 
@@ -10,6 +11,7 @@ import kpiRoutes from "./routes/kpi.routes";
 import updatesRoutes from "./routes/updates.routes";
 import driversRoutes from "./routes/drivers.routes";
 import sprRoutes from "./routes/spr.routes";
+import barometroRoutes from "./routes/barometro.routes";
 
 const app = express();
 
@@ -18,6 +20,9 @@ app.use(
     origin: "http://localhost:5173",
   })
 );
+
+// gzip: a resposta do Barômetro (série completa de todos os hubs) é grande
+app.use(compression());
 
 app.use(express.json());
 
@@ -30,6 +35,7 @@ app.use("/api/kpis", requireAuth, kpiRoutes);
 app.use("/api/updates", requireAuth, updatesRoutes);
 app.use("/api/drivers", requireAuth, driversRoutes);
 app.use("/api/spr", requireAuth, sprRoutes);
+app.use("/api/barometro", requireAuth, barometroRoutes);
 
 // Em produção o próprio Express serve o frontend buildado (um processo só).
 // Em dev o Vite serve o frontend e faz proxy de /api para cá.
