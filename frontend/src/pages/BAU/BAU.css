@@ -9,17 +9,17 @@
   background:
     radial-gradient(
       circle at 75% 15%,
-      rgba(20, 53, 86, 0.18),
+      rgba(var(--line-rgb), 0.18),
       transparent 35%
     ),
     linear-gradient(
       135deg,
-      #020914 0%,
-      #06111f 45%,
-      #020914 100%
+      var(--bg) 0%,
+      var(--card) 45%,
+      var(--bg) 100%
     );
 
-  color: #ffffff;
+  color: var(--text);
   display: flex;
 }
 
@@ -91,13 +91,13 @@
   background:
     linear-gradient(
       135deg,
-      rgba(255, 92, 42, 0.18),
-      rgba(255, 92, 42, 0.05)
+      rgba(var(--orange-rgb), 0.18),
+      rgba(var(--orange-rgb), 0.05)
     );
 
-  border: 1px solid rgba(255, 92, 42, 0.25);
+  border: 1px solid rgba(var(--orange-rgb), 0.25);
 
-  color: #ff5c2a;
+  color: var(--orange);
 }
 
 .bau-header h1 {
@@ -112,7 +112,7 @@
 .bau-header p {
   margin: 5px 0 0;
 
-  color: #8697ac;
+  color: var(--muted);
 
   font-size: 13px;
   line-height: 1.5;
@@ -128,7 +128,7 @@
   align-items: center;
   gap: 8px;
 
-  color: #ff6a3d;
+  color: var(--orange);
 
   font-size: 13px;
   font-weight: 600;
@@ -153,11 +153,11 @@
   background:
     linear-gradient(
       135deg,
-      rgba(8, 20, 35, 0.96),
-      rgba(5, 15, 28, 0.96)
+      rgba(var(--card-rgb), 0.96),
+      rgba(var(--card-rgb), 0.96)
     );
 
-  border: 1px solid rgba(122, 148, 177, 0.16);
+  border: 1px solid rgba(var(--line-rgb), 0.16);
 
   border-radius: 10px;
 
@@ -207,7 +207,7 @@
 }
 
 .bau-filter label {
-  color: #93a2b8;
+  color: var(--muted);
 
   font-size: 11px;
   font-weight: 600;
@@ -226,11 +226,11 @@
 
   border-radius: 6px;
 
-  border: 1px solid rgba(125, 151, 180, 0.2);
+  border: 1px solid rgba(var(--line-rgb), 0.2);
 
-  background: #081524;
+  background: var(--card);
 
-  color: #e8edf4;
+  color: var(--text);
 
   font-family: inherit;
   font-size: 13px;
@@ -244,20 +244,20 @@
 }
 
 .bau-filter input::placeholder {
-  color: #536174;
+  color: var(--muted);
 }
 
 .bau-filter input:hover {
-  border-color: rgba(255, 92, 42, 0.28);
+  border-color: rgba(var(--orange-rgb), 0.28);
 }
 
 .bau-filter input:focus {
-  border-color: rgba(255, 92, 42, 0.65);
+  border-color: rgba(var(--orange-rgb), 0.65);
 
   box-shadow:
-    0 0 0 2px rgba(255, 92, 42, 0.08);
+    0 0 0 2px rgba(var(--orange-rgb), 0.08);
 
-  background: #0a1828;
+  background: var(--card);
 }
 
 
@@ -279,11 +279,11 @@
 
   border-radius: 6px;
 
-  border: 1px solid rgba(125, 151, 180, 0.2);
+  border: 1px solid rgba(var(--line-rgb), 0.2);
 
   background: transparent;
 
-  color: #8c9bad;
+  color: var(--muted);
 
   font-family: inherit;
   font-size: 12px;
@@ -298,15 +298,15 @@
 }
 
 .bau-reset-button:hover {
-  color: #ffffff;
+  color: var(--text);
 
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--ov-rgb), 0.04);
 
-  border-color: rgba(255, 92, 42, 0.35);
+  border-color: rgba(var(--orange-rgb), 0.35);
 }
 
 .bau-reset-button svg {
-  color: #8c9bad;
+  color: var(--muted);
 }
 
 
@@ -355,11 +355,11 @@
   background:
     linear-gradient(
       145deg,
-      rgba(7, 19, 33, 0.98),
-      rgba(4, 13, 24, 0.98)
+      rgba(var(--card-rgb), 0.98),
+      rgba(var(--bg-rgb), 0.98)
     );
 
-  border: 1px solid rgba(122, 148, 177, 0.15);
+  border: 1px solid rgba(var(--line-rgb), 0.15);
 
   overflow: hidden;
 
@@ -387,13 +387,13 @@
 
   gap: 15px;
 
-  border-bottom: 1px solid rgba(122, 148, 177, 0.1);
+  border-bottom: 1px solid rgba(var(--line-rgb), 0.1);
 }
 
 .bau-card-header h2 {
   margin: 0;
 
-  color: #ffffff;
+  color: var(--text);
 
   font-size: 17px;
 
@@ -405,7 +405,7 @@
 .bau-card-header p {
   margin: 4px 0 0;
 
-  color: #7c8ba0;
+  color: var(--muted);
 
   font-size: 12px;
 
@@ -425,11 +425,11 @@
 
   border-radius: 7px;
 
-  color: #ff5c2a;
+  color: var(--orange);
 
-  background: rgba(255, 92, 42, 0.08);
+  background: rgba(var(--orange-rgb), 0.08);
 
-  border: 1px solid rgba(255, 92, 42, 0.18);
+  border: 1px solid rgba(var(--orange-rgb), 0.18);
 }
 
 
@@ -450,9 +450,9 @@
 
   border-radius: 7px;
 
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(var(--ov-rgb), 0.025);
 
-  border: 1px solid rgba(122, 148, 177, 0.1);
+  border: 1px solid rgba(var(--line-rgb), 0.1);
 }
 
 
@@ -497,7 +497,7 @@
 
   background: transparent;
 
-  color: #748397;
+  color: var(--muted);
 
   padding: 6px 12px;
 
@@ -517,17 +517,17 @@
 }
 
 .bau-chart-controls button:hover {
-  color: #ffffff;
+  color: var(--text);
 
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--ov-rgb), 0.04);
 }
 
 .bau-chart-controls button.active {
-  color: #ffffff;
+  color: var(--text);
 
-  background: rgba(255, 92, 42, 0.14);
+  background: rgba(var(--orange-rgb), 0.14);
 
-  border-color: rgba(255, 92, 42, 0.4);
+  border-color: rgba(var(--orange-rgb), 0.4);
 }
 
 
@@ -554,13 +554,13 @@
    ========================================================= */
 
 .chart-grid-line {
-  stroke: rgba(255, 255, 255, 0.055);
+  stroke: rgba(var(--ov-rgb), 0.055);
 
   stroke-width: 1;
 }
 
 .chart-axis-line {
-  stroke: rgba(255, 255, 255, 0.12);
+  stroke: rgba(var(--ov-rgb), 0.12);
 
   stroke-width: 1;
 }
@@ -571,7 +571,7 @@
    ========================================================= */
 
 .chart-axis-label {
-  fill: #8494a9;
+  fill: var(--muted);
 
   font-size: 12px;
   font-weight: 500;
@@ -581,7 +581,7 @@
 
 /* valor exibido em cima de cada barra */
 .chart-bar-value-label {
-  fill: #c9d4e3;
+  fill: var(--text);
 
   font-size: 10px;
   font-weight: 600;
@@ -603,7 +603,7 @@
 }
 
 .chart-hover-area:hover {
-  fill: rgba(255, 92, 42, 0.15);
+  fill: rgba(var(--orange-rgb), 0.15);
 }
 
 
@@ -616,9 +616,9 @@
    ========================================================= */
 
     .chart-tooltip-box {
-      fill: #0c1a2c;
+      fill: var(--card);
 
-      stroke: rgba(255, 122, 74, 0.55);
+      stroke: rgba(var(--orange-rgb), 0.55);
 
       stroke-width: 1.2;
 
@@ -632,7 +632,7 @@
     /* Data */
 
     .chart-tooltip-date {
-      fill: #9aa8bc;
+      fill: var(--muted);
 
       font-size: 11px;
 
@@ -661,7 +661,7 @@
 
   gap: 7px;
 
-  color: #aab5c3;
+  color: var(--muted);
 
   font-size: 12px;
   font-weight: 500;
@@ -714,7 +714,7 @@
    ========================================================= */
 
 .spr-gap-connector {
-  stroke: #6b7d94;
+  stroke: var(--muted);
 
   stroke-width: 1.5;
 
@@ -724,7 +724,7 @@
 }
 
 .spr-gap-label {
-  fill: #c9d3e0;
+  fill: var(--text);
 
   font-size: 10px;
   font-weight: 700;
@@ -753,7 +753,7 @@
 }
 
 .spr-gap-zero-line {
-  stroke: #6b7d94;
+  stroke: var(--muted);
 
   stroke-width: 1;
 
@@ -762,7 +762,7 @@
 
 /* limite do GAP (acima = verde, abaixo = vermelho) */
 .spr-gap-threshold-line {
-  stroke: rgba(31, 169, 113, 0.55);
+  stroke: rgba(var(--green-rgb), 0.55);
 
   stroke-width: 1;
 
@@ -770,13 +770,13 @@
 }
 
 .spr-hover-line {
-  stroke: rgba(201, 211, 224, 0.35);
+  stroke: rgba(var(--line-rgb), 0.35);
 
   stroke-width: 1;
 }
 
 .spr-panel-title {
-  fill: #8494a9;
+  fill: var(--muted);
 
   font-size: 11px;
   font-weight: 700;
@@ -795,7 +795,7 @@
   font-family: "Inter", Arial, sans-serif;
 
   paint-order: stroke;
-  stroke: #0a111c;
+  stroke: var(--card);
   stroke-width: 3px;
   stroke-linejoin: round;
 }
@@ -818,17 +818,17 @@
 
   gap: 7px;
 
-  color: #748397;
+  color: var(--muted);
 }
 
 .bau-chart-placeholder strong {
-  color: #d8dee7;
+  color: var(--text);
 
   font-size: 14px;
 }
 
 .bau-chart-placeholder span {
-  color: #7c8ba0;
+  color: var(--muted);
 
   font-size: 12px;
 }
@@ -849,11 +849,11 @@
 
   border-radius: 5px;
 
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(var(--ov-rgb), 0.025);
 
-  border: 1px solid rgba(122, 148, 177, 0.1);
+  border: 1px solid rgba(var(--line-rgb), 0.1);
 
-  color: #8494a9;
+  color: var(--muted);
 
   font-size: 11px;
 }
@@ -885,11 +885,11 @@
 
   border-radius: 5px;
 
-  border: 1px solid rgba(255, 92, 42, 0.28);
+  border: 1px solid rgba(var(--orange-rgb), 0.28);
 
-  background: rgba(255, 92, 42, 0.08);
+  background: rgba(var(--orange-rgb), 0.08);
 
-  color: #ff8a5c;
+  color: var(--orange);
 
   font-family: inherit;
 
@@ -905,11 +905,11 @@
 }
 
 .bau-download-button:hover:not(:disabled) {
-  color: #ffffff;
+  color: var(--text);
 
-  background: rgba(255, 92, 42, 0.18);
+  background: rgba(var(--orange-rgb), 0.18);
 
-  border-color: rgba(255, 92, 42, 0.45);
+  border-color: rgba(var(--orange-rgb), 0.45);
 }
 
 .bau-download-button:disabled {
@@ -941,7 +941,7 @@
 
   z-index: 2;
 
-  background: #071322;
+  background: var(--card);
 }
 
 .bau-table th {
@@ -949,7 +949,7 @@
 
   text-align: left;
 
-  color: #93a2b8;
+  color: var(--muted);
 
   font-size: 11px;
 
@@ -959,15 +959,15 @@
 
   letter-spacing: 0.3px;
 
-  border-bottom: 1px solid rgba(122, 148, 177, 0.12);
+  border-bottom: 1px solid rgba(var(--line-rgb), 0.12);
 }
 
 .bau-table td {
   padding: 10px;
 
-  color: #c3ccd8;
+  color: var(--text);
 
-  border-bottom: 1px solid rgba(122, 148, 177, 0.07);
+  border-bottom: 1px solid rgba(var(--line-rgb), 0.07);
 }
 
 .bau-table tbody tr {
@@ -976,7 +976,7 @@
 }
 
 .bau-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(var(--ov-rgb), 0.025);
 }
 
 .bau-table tbody tr:last-child td {
@@ -994,17 +994,17 @@
 }
 
 .bau-table-wrapper::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(var(--ov-rgb), 0.02);
 }
 
 .bau-table-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--ov-rgb), 0.12);
 
   border-radius: 10px;
 }
 
 .bau-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 92, 42, 0.4);
+  background: rgba(var(--orange-rgb), 0.4);
 }
 
 
@@ -1022,7 +1022,7 @@
 
   padding: 12px 10px 4px;
 
-  color: #93a2b8;
+  color: var(--muted);
 
   font-size: 12px;
 }
@@ -1037,11 +1037,11 @@
 
   border-radius: 6px;
 
-  border: 1px solid rgba(125, 151, 180, 0.2);
+  border: 1px solid rgba(var(--line-rgb), 0.2);
 
   background: transparent;
 
-  color: #c3ccd8;
+  color: var(--text);
 
   font-family: inherit;
   font-size: 12px;
@@ -1057,11 +1057,11 @@
 }
 
 .bau-table-pagination button:hover:not(:disabled) {
-  color: #ffffff;
+  color: var(--text);
 
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--ov-rgb), 0.04);
 
-  border-color: rgba(255, 92, 42, 0.35);
+  border-color: rgba(var(--orange-rgb), 0.35);
 }
 
 .bau-table-pagination button:disabled {

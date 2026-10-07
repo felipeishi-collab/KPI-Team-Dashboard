@@ -9,6 +9,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
+import { getCurrentUser } from "../../utils/session";
 import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
 
@@ -27,11 +28,7 @@ const areas = [
 function Dashboard() {
   const navigate = useNavigate();
 
-  const storedUser = localStorage.getItem("kpi_user");
-
-  const user = storedUser
-    ? JSON.parse(storedUser)
-    : null;
+  const user = getCurrentUser();
 
   const userName = user?.name || "Usuário";
   const userEmail = user?.email || "";

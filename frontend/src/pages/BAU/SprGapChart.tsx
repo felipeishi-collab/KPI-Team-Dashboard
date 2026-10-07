@@ -37,11 +37,11 @@ interface SprGapChartProps {
 // e mais intenso quanto maior a distância em relação ao zero.
 // ============================================================
 
-const DELIVERING_COLOR = "#3987e5";
-const ROUTE_COLOR = "#d95926";
+const DELIVERING_COLOR = "var(--blue)";
+const ROUTE_COLOR = "var(--orange)";
 
-const GAP_GOOD_COLOR = "#1fa971";
-const GAP_BAD_COLOR = "#e0474c";
+const GAP_GOOD_COLOR = "var(--green)";
+const GAP_BAD_COLOR = "var(--red)";
 
 // GAP >= GAP_THRESHOLD fica verde; abaixo disso, vermelho.
 // Hoje: 0 = acima do zero verde, abaixo do zero vermelho.

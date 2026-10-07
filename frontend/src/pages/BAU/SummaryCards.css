@@ -1,0 +1,264 @@
+/* =========================================================
+   CARDS DE RESUMO + SKELETONS + MOVIMENTO
+   ========================================================= */
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1400px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.summary-note {
+  margin: -6px 0 14px;
+
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+.summary-card {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  min-height: 132px;
+  padding: 14px 16px 12px 20px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: 12px;
+
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.summary-card::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 4px;
+
+  background: var(--kc, var(--orange));
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+
+  border-color: rgba(var(--orange-rgb), 0.4);
+  box-shadow: var(--shadow);
+}
+
+.summary-label {
+  color: var(--muted);
+
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.summary-value {
+  color: var(--text);
+
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.summary-value--empty {
+  color: var(--muted);
+}
+
+.summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.summary-caption {
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+.summary-delta {
+  padding: 2px 7px;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.summary-delta--good {
+  color: var(--green);
+  background: rgba(var(--green-rgb), 0.14);
+}
+
+.summary-delta--bad {
+  color: var(--red);
+  background: rgba(var(--red-rgb), 0.14);
+}
+
+.summary-delta--neutral {
+  color: var(--muted);
+  background: rgba(var(--line-rgb), 0.14);
+}
+
+.summary-spark {
+  width: 100%;
+  height: 30px;
+
+  margin-top: auto;
+}
+
+.summary-spark--empty {
+  display: block;
+}
+
+/* ---------- SKELETON ---------- */
+
+.skeleton {
+  display: block;
+
+  border-radius: 6px;
+
+  background: linear-gradient(
+    90deg,
+    rgba(var(--line-rgb), 0.1) 25%,
+    rgba(var(--line-rgb), 0.22) 50%,
+    rgba(var(--line-rgb), 0.1) 75%
+  );
+  background-size: 200% 100%;
+
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.summary-skeleton-value {
+  width: 60%;
+  height: 28px;
+}
+
+.summary-skeleton-line {
+  width: 85%;
+  height: 12px;
+}
+
+.chart-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  min-height: 250px;
+  padding: 16px 8px 4px;
+}
+
+.chart-skeleton-bars {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  gap: 8px;
+
+  min-height: 200px;
+}
+
+.chart-skeleton-bars .skeleton {
+  flex: 1;
+
+  border-radius: 4px 4px 0 0;
+}
+
+.chart-skeleton small {
+  color: var(--muted);
+
+  font-size: 12px;
+  text-align: center;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- ENTRADA SUAVE DOS BLOCOS ---------- */
+
+.summary-card,
+.bau-filters,
+.bau-chart-card,
+.bau-table-card {
+  animation: bau-fade-up 0.4s ease both;
+}
+
+.summary-card:nth-child(2) { animation-delay: 0.04s; }
+.summary-card:nth-child(3) { animation-delay: 0.08s; }
+.summary-card:nth-child(4) { animation-delay: 0.12s; }
+.summary-card:nth-child(5) { animation-delay: 0.16s; }
+.summary-card:nth-child(6) { animation-delay: 0.2s; }
+
+@keyframes bau-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-card,
+  .bau-filters,
+  .bau-chart-card,
+  .bau-table-card,
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ---------- GAP NA TABELA ---------- */
+
+.bau-gap--pos {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.bau-gap--neg {
+  color: var(--red);
+  font-weight: 700;
+}

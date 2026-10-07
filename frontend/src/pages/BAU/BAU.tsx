@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { authFetch, getCurrentUser } from "../../utils/session";
 import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
 
@@ -30,6 +31,9 @@ import DriversBarChart from "./DriversBarChart";
 import type { BarChartDatum } from "./DriversBarChart";
 
 import SprGapChart from "./SprGapChart";
+import SummaryCards from "./SummaryCards";
+import type { SummaryItem } from "./SummaryCards";
+import ChartSkeleton from "./ChartSkeleton";
 import type { SprChartDatum } from "./SprGapChart";
 
 import "./BAU.css";
@@ -252,15 +256,10 @@ function BAU() {
   // USUÁRIO
   // ============================================================
 
-  const storedUser =
-    localStorage.getItem("kpi_user");
-
-  const user: User = storedUser
-    ? JSON.parse(storedUser)
-    : {
-        name: "",
-        email: "",
-      };
+  const user: User = getCurrentUser() ?? {
+    name: "",
+    email: "",
+  };
 
   // ============================================================
   // FILTROS
@@ -299,8 +298,8 @@ function BAU() {
   useEffect(() => {
     async function fetchStations() {
       try {
-        const response = await fetch(
-          "http://localhost:3001/api/kpis/stations"
+        const response = await authFetch(
+          "/api/kpis/stations"
         );
 
         if (!response.ok) {
@@ -474,11 +473,11 @@ function BAU() {
           params.toString();
 
         const url = queryString
-          ? `http://localhost:3001/api/kpis/at-no-piso?${queryString}`
-          : "http://localhost:3001/api/kpis/at-no-piso";
+          ? `/api/kpis/at-no-piso?${queryString}`
+          : "/api/kpis/at-no-piso";
 
         const response =
-          await fetch(url);
+          await authFetch(url);
 
         if (!response.ok) {
           throw new Error(
@@ -567,11 +566,11 @@ function BAU() {
           params.toString();
 
         const url = queryString
-          ? `http://localhost:3001/api/drivers?${queryString}`
-          : "http://localhost:3001/api/drivers";
+          ? `/api/drivers?${queryString}`
+          : "/api/drivers";
 
         const response =
-          await fetch(url);
+          await authFetch(url);
 
         if (!response.ok) {
           throw new Error(
@@ -660,11 +659,11 @@ function BAU() {
           params.toString();
 
         const url = queryString
-          ? `http://localhost:3001/api/spr?${queryString}`
-          : "http://localhost:3001/api/spr";
+          ? `/api/spr?${queryString}`
+          : "/api/spr";
 
         const response =
-          await fetch(url);
+          await authFetch(url);
 
         if (!response.ok) {
           throw new Error(
@@ -1147,7 +1146,7 @@ function BAU() {
     {
       key: "at_no_piso",
       label: "ATs no piso",
-      color: "#ff5c2a",
+      color: "var(--orange)",
       formatValue: (value: number) =>
         value.toLocaleString("pt-BR"),
       formatAxis: formatK,
@@ -1158,7 +1157,7 @@ function BAU() {
     {
       key: "qty_at_delivering",
       label: "ATs (qty_at_delivering)",
-      color: "#3987e5",
+      color: "var(--blue)",
       formatValue: (value: number) =>
         value.toLocaleString("pt-BR"),
       formatAxis: formatK,
@@ -1201,7 +1200,7 @@ function BAU() {
           {
             key: "percent_ocupacao",
             label: "% Ocupação",
-            color: "#199e70",
+            color: "var(--green)",
             formatValue: formatPercent,
             formatAxis: formatAxisPercent,
           },
@@ -1210,7 +1209,7 @@ function BAU() {
           {
             key: "drivers_confirmados",
             label: "Confirmação em D-1 (abs.)",
-            color: "#199e70",
+            color: "var(--green)",
             formatValue: (value: number) =>
               value.toLocaleString("pt-BR"),
             formatAxis: formatK,
@@ -1223,7 +1222,7 @@ function BAU() {
           {
             key: "percent_rejeite_ativo",
             label: "% Rejeite Ativo",
-            color: "#d95926",
+            color: "var(--orange)",
             formatValue: formatPercent,
             formatAxis: formatAxisPercent,
           },
@@ -1232,12 +1231,198 @@ function BAU() {
           {
             key: "rejeite_ativo_absoluto",
             label: "Rejeite Ativo (abs.)",
-            color: "#d95926",
+            color: "var(--orange)",
             formatValue: (value: number) =>
               value.toLocaleString("pt-BR"),
             formatAxis: formatK,
           },
         ];
+
+  // ============================================================
+  // CARDS DE RESUMO: valor do período mais recente com dado e
+  // variação vs o período anterior (na granularidade selecionada).
+  // Períodos sem base (ex.: dia corrente ainda sem drivers
+  // confirmados) viram null e são ignorados.
+  // ============================================================
+
+  const summaryItems: SummaryItem[] = useMemo(() => {
+    type Kind = "count" | "percent" | "abs";
+
+    // período ainda em andamento (hoje / semana / mês correntes):
+    // dados parciais distorceriam a variação, então ficam de fora
+    const todayIso = formatDateForFilter(new Date());
+    const openPeriod =
+      granularity === "daily"
+        ? todayIso
+        : granularity === "weekly"
+          ? weekStartIso(todayIso)
+          : todayIso.slice(0, 7);
+
+    const build = (
+      id: string,
+      label: string,
+      series: (number | null)[],
+      kind: Kind,
+      goodWhen: "up" | "down" | null,
+      accent: string,
+      isLoading: boolean,
+      format: (value: number) => string
+    ): SummaryItem => {
+      const points: { period: string; value: number }[] = [];
+
+      series.forEach((value, index) => {
+        if (
+          value !== null &&
+          Number.isFinite(value) &&
+          chartPeriods[index] < openPeriod
+        ) {
+          points.push({ period: chartPeriods[index], value });
+        }
+      });
+
+      const current = points[points.length - 1];
+      const previous = points[points.length - 2];
+
+      let deltaText: string | null = null;
+      let direction: SummaryItem["direction"] = null;
+
+      if (current && previous) {
+        const diff = current.value - previous.value;
+
+        direction =
+          Math.abs(diff) < 1e-9
+            ? "flat"
+            : diff > 0
+              ? "up"
+              : "down";
+
+        const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+
+        if (kind === "percent") {
+          deltaText = `${sign}${Math.abs(diff).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} p.p.`;
+        } else if (kind === "abs") {
+          deltaText = `${sign}${Math.abs(diff).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}`;
+        } else if (previous.value !== 0) {
+          deltaText = `${sign}${Math.abs((diff / previous.value) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+        }
+      }
+
+      return {
+        id,
+        label,
+        value: current ? format(current.value) : null,
+        deltaText,
+        direction,
+        goodWhen,
+        currentLabel: current
+          ? formatPeriodLabel(current.period)
+          : null,
+        previousLabel: previous
+          ? formatPeriodLabel(previous.period)
+          : null,
+        spark: points.map((point) => point.value),
+        accent,
+        loading: isLoading,
+      };
+    };
+
+    const pct = (value: number) =>
+      `${value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+
+    const atsSeries = chartPeriods.map((period) => {
+      const item = atsByPeriod.get(period);
+
+      return item && item.qty_at_delivering > 0 ? item : null;
+    });
+
+    const driversSeries = chartPeriods.map((period) => {
+      const item = driversByPeriod.get(period);
+
+      return item && item.drivers_confirmados > 0 ? item : null;
+    });
+
+    return [
+      build(
+        "at_no_piso",
+        "ATs no piso",
+        atsSeries.map((item) => (item ? item.at_no_piso : null)),
+        "count",
+        "down",
+        "var(--orange)",
+        loading,
+        (value) => value.toLocaleString("pt-BR")
+      ),
+      build(
+        "percent_at_no_piso",
+        "% ATs no piso",
+        atsSeries.map((item) =>
+          item
+            ? (item.at_no_piso / item.qty_at_delivering) * 100
+            : null
+        ),
+        "percent",
+        "down",
+        "var(--amber)",
+        loading,
+        pct
+      ),
+      build(
+        "ocupacao",
+        "Ocupação",
+        driversSeries.map((item) =>
+          item ? item.percent_ocupacao : null
+        ),
+        "percent",
+        "up",
+        "var(--green)",
+        driversLoading,
+        pct
+      ),
+      build(
+        "rejeite",
+        "Rejeite ativo",
+        driversSeries.map((item) =>
+          item ? item.percent_rejeite_ativo : null
+        ),
+        "percent",
+        "down",
+        "var(--red)",
+        driversLoading,
+        pct
+      ),
+      build(
+        "spr_delivering",
+        "SPR Delivering",
+        sprAlignedData.map((item) => item.spr_delivering),
+        "count",
+        null,
+        "var(--blue)",
+        sprLoading,
+        (value) =>
+          value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+      ),
+      build(
+        "gap",
+        "GAP SPR",
+        sprAlignedData.map((item) => item.gap),
+        "abs",
+        "up",
+        "var(--blue)",
+        sprLoading,
+        (value) =>
+          `${value > 0 ? "+" : ""}${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}`
+      ),
+    ];
+  }, [
+    granularity,
+    chartPeriods,
+    atsByPeriod,
+    driversByPeriod,
+    sprAlignedData,
+    loading,
+    driversLoading,
+    sprLoading,
+  ]);
 
   // botões "%" / "Abs." exibidos no cabeçalho de cada gráfico
   const renderViewToggle = (
@@ -1601,6 +1786,12 @@ function BAU() {
           </section>
 
           {/* ==================================================
+              RESUMO
+          ================================================== */}
+
+          <SummaryCards items={summaryItems} />
+
+          {/* ==================================================
               GRID PRINCIPAL
           ================================================== */}
 
@@ -1620,18 +1811,7 @@ function BAU() {
 
                 <section className="bau-chart-card">
 
-                  <div className="bau-chart-placeholder">
-
-                    <strong>
-                      Carregando dados...
-                    </strong>
-
-                    <span>
-                      Buscando informações
-                      do KPI.
-                    </span>
-
-                  </div>
+                  <ChartSkeleton label="Carregando dados — do KPI" />
 
                 </section>
 
@@ -1717,15 +1897,7 @@ function BAU() {
 
                     {sprLoading && (
                       <section className="bau-chart-card">
-                        <div className="bau-chart-placeholder">
-                          <strong>
-                            Carregando dados...
-                          </strong>
-                          <span>
-                            Buscando informações
-                            de SPR.
-                          </span>
-                        </div>
+                        <ChartSkeleton label="Carregando dados — de SPR" />
                       </section>
                     )}
 
@@ -1770,15 +1942,7 @@ function BAU() {
 
                     {driversLoading && (
                       <section className="bau-chart-card">
-                        <div className="bau-chart-placeholder">
-                          <strong>
-                            Carregando dados...
-                          </strong>
-                          <span>
-                            Buscando informações
-                            de drivers.
-                          </span>
-                        </div>
+                        <ChartSkeleton label="Carregando dados — de drivers" />
                       </section>
                     )}
 
@@ -2109,7 +2273,17 @@ function BAU() {
                                       : "-"}
                                   </td>
 
-                                  <td>
+                                  <td
+                                    className={
+                                      sprRow
+                                        ? sprRow.gap > 0
+                                          ? "bau-gap--pos"
+                                          : sprRow.gap < 0
+                                            ? "bau-gap--neg"
+                                            : ""
+                                        : ""
+                                    }
+                                  >
                                     {sprRow
                                       ? formatGap(
                                           sprRow.gap

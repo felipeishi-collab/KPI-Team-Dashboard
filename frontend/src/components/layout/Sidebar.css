@@ -16,12 +16,12 @@
   background:
     linear-gradient(
       180deg,
-      #071525 0%,
-      #04101d 100%
+      var(--card) 0%,
+      var(--card) 100%
     );
 
   border-right:
-    1px solid rgba(91, 137, 180, 0.18);
+    1px solid rgba(var(--line-rgb), 0.18);
 
   z-index: 100;
 
@@ -54,7 +54,7 @@
   padding: 0 22px;
 
   border-bottom:
-    1px solid rgba(91, 137, 180, 0.15);
+    1px solid rgba(var(--line-rgb), 0.15);
 
   overflow: hidden;
 
@@ -78,7 +78,7 @@
   align-items: center;
   justify-content: center;
 
-  color: #ff5b22;
+  color: var(--orange);
 }
 
 
@@ -86,7 +86,7 @@
   display: flex;
   flex-direction: column;
 
-  color: white;
+  color: var(--text);
 
   font-size: 17px;
   font-weight: 700;
@@ -130,13 +130,13 @@
   padding: 0;
 
   border:
-    1px solid rgba(91, 137, 180, 0.25);
+    1px solid rgba(var(--line-rgb), 0.25);
 
   border-radius: 50%;
 
-  background: #071525;
+  background: var(--card);
 
-  color: #aebed0;
+  color: var(--muted);
 
   cursor: pointer;
 
@@ -149,9 +149,9 @@
 }
 
 .sidebar-toggle:hover {
-  background: #ff5b22;
+  background: var(--orange);
 
-  border-color: #ff5b22;
+  border-color: var(--orange);
 
   color: white;
 }
@@ -194,7 +194,7 @@
 
   border-radius: 9px;
 
-  color: #aebed0;
+  color: var(--muted);
 
   text-decoration: none;
 
@@ -258,10 +258,10 @@
    ============================================================ */
 
 .sidebar-item:hover {
-  color: white;
+  color: var(--text);
 
   background:
-    rgba(255, 255, 255, 0.05);
+    rgba(var(--ov-rgb), 0.05);
 }
 
 
@@ -270,13 +270,13 @@
    ============================================================ */
 
 .sidebar-item.active {
-  color: white;
+  color: var(--text);
 
   background:
     linear-gradient(
       90deg,
-      rgba(255, 91, 34, 0.28),
-      rgba(255, 91, 34, 0.10)
+      rgba(var(--orange-rgb), 0.28),
+      rgba(var(--orange-rgb), 0.10)
     );
 }
 
@@ -295,7 +295,7 @@
   border-radius:
     0 5px 5px 0;
 
-  background: #ff5b22;
+  background: var(--orange);
 }
 
 
@@ -314,9 +314,9 @@
   padding: 0 22px;
 
   border-top:
-    1px solid rgba(91, 137, 180, 0.15);
+    1px solid rgba(var(--line-rgb), 0.15);
 
-  color: white;
+  color: var(--text);
 
   font-size: 15px;
   font-weight: 600;
@@ -376,7 +376,7 @@
 
   border-radius: 7px;
 
-  background: #ff5b22;
+  background: var(--orange);
 
   color: white;
 
@@ -400,7 +400,7 @@
 }
 
 .sidebar-menu::-webkit-scrollbar-thumb {
-  background: rgba(174, 190, 208, 0.15);
+  background: rgba(var(--line-rgb), 0.15);
 
   border-radius: 10px;
 }

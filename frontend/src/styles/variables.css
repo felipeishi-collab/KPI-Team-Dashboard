@@ -1,0 +1,68 @@
+/* Design tokens — mesma identidade visual do painel Live Ops. */
+
+:root,
+[data-theme="dark"] {
+  --orange: #EE4D2D;
+  --orange-light: #FF7337;
+  --orange-dark: #C23A1E;
+
+  --bg: #0b0d17;
+  --bg2: #12152a;
+  --card: #181c32;
+  --card2: #1e2347;
+  --border: #252d52;
+  --text: #f0f2f6;
+  --muted: #8892b0;
+
+  --green: #3ecf8e;
+  --amber: #f5a623;
+  --red: #ff5c5c;
+  --blue: #4a90d9;
+
+  /* canais RGB, para compor transparências: rgba(var(--x-rgb), .2) */
+  --orange-rgb: 238, 77, 45;
+  --green-rgb: 62, 207, 142;
+  --red-rgb: 255, 92, 92;
+  --blue-rgb: 74, 144, 217;
+  --bg-rgb: 11, 13, 23;
+  --bg2-rgb: 18, 21, 42;
+  --card-rgb: 24, 28, 50;
+  --card2-rgb: 30, 35, 71;
+  --line-rgb: 136, 146, 176;
+  --ov-rgb: 255, 255, 255;
+
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg2: #eaecf4;
+  --card: #ffffff;
+  --card2: #f7f8fc;
+  --border: #e2e8f0;
+  --text: #1a202c;
+  --muted: #718096;
+
+  --green: #38a169;
+  --amber: #d69e2e;
+  --red: #e53e3e;
+  --blue: #3182ce;
+
+  --green-rgb: 56, 161, 105;
+  --red-rgb: 229, 62, 62;
+  --blue-rgb: 49, 130, 206;
+  --bg-rgb: 244, 246, 251;
+  --bg2-rgb: 234, 236, 244;
+  --card-rgb: 255, 255, 255;
+  --card2-rgb: 247, 248, 252;
+  --line-rgb: 113, 128, 150;
+  --ov-rgb: 26, 32, 44;
+
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  color-scheme: light;
+}

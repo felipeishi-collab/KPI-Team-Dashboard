@@ -3,6 +3,8 @@ import {
   Bell,
   ChevronDown,
   GitCommit,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 import {
@@ -11,6 +13,8 @@ import {
   useState,
 } from "react";
 
+import { authFetch } from "../../utils/session";
+import { useTheme } from "../../context/ThemeContext";
 import "./Topbar.css";
 
 interface TopbarProps {
@@ -74,6 +78,8 @@ function Topbar({
   userName,
   userEmail,
 }: TopbarProps) {
+  const { isDark, toggleTheme } = useTheme();
+
 
   const initials = userName
     .split(" ")
@@ -109,8 +115,8 @@ function Topbar({
       try {
         setLoadingCommits(true);
 
-        const response = await fetch(
-          "http://localhost:3001/api/updates?limit=8"
+        const response = await authFetch(
+          "/api/updates?limit=8"
         );
 
         if (!response.ok) {
@@ -210,6 +216,17 @@ function Topbar({
       {/* AÇÕES */}
 
       <div className="topbar-actions">
+
+        {/* TEMA */}
+
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title="Alternar tema"
+          aria-label="Alternar tema"
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
 
         {/* NOTIFICAÇÕES */}
 
